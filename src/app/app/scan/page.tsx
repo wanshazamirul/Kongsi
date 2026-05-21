@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, Loader2, Receipt, X, Check, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { toast } from "sonner";
 import { base64ToWebP } from "@/lib/image-utils";
 import { TopBar } from "@/components/top-bar";
@@ -108,10 +108,6 @@ function ScanPageContent() {
     });
   }
 
-  function addParticipant() {
-    setParticipants([...participants, { name: "" }]);
-  }
-
   async function createBill() {
     if (!title.trim()) { toast.error("Give the bill a title"); return; }
     if (items.length === 0) { toast.error("No items to split"); return; }
@@ -138,19 +134,32 @@ function ScanPageContent() {
       }
     });
 
-    const total = items.reduce((s, i) => s + i.amount, 0);
+    const total = Math.round(items.reduce((s, i) => s + i.amount, 0) * 100) / 100;
+
+    // Build participant amounts, ensuring sums match total
+    const parts = validParticipants.map((p, pi) => ({
+      name: p.name.trim(),
+      amount: Math.round((personTotals[pi] || total / validParticipants.length) * 100) / 100,
+    }));
+    // Fix rounding: add remainder to first participant
+    const partsSum = parts.reduce((s, p) => s + p.amount, 0);
+    const diff = Math.round((total - partsSum) * 100) / 100;
+    if (diff !== 0 && parts.length > 0) {
+      parts[0].amount = Math.round((parts[0].amount + diff) * 100) / 100;
+    }
+    // Ensure no zero/negative amounts
+    const safeParts = parts.map((p) => ({
+      ...p,
+      amount: p.amount <= 0 ? 0.01 : p.amount,
+    }));
 
     const res = await fetch("/api/bills", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: title.trim(),
-        total_amount: Math.round(total * 100) / 100,
-        description: items.map((i) => `${i.name} RM${i.amount.toFixed(2)}`).join(", "),
-        participants: validParticipants.map((p, pi) => ({
-          name: p.name.trim(),
-          amount: Math.round((personTotals[pi] || total / validParticipants.length) * 100) / 100,
-        })),
+        total_amount: total,
+        participants: safeParts,
       }),
     });
 
@@ -240,28 +249,51 @@ function ScanPageContent() {
     );
   }
 
+  const myTotal = validParticipants.length > 0
+    ? items.filter((_, i) => !isFeeItem(items[i].name)).reduce((sum, item, i) => {
+        const origIdx = items.indexOf(item);
+        const assigned = itemAssignments[origIdx];
+        if (assigned === 0) return sum + item.amount;
+        if (assigned === undefined) return sum + item.amount / validParticipants.length;
+        return sum;
+      }, 0)
+    : 0;
+  const assignedTotal = items.reduce((sum, item, i) => {
+    if (itemAssignments[i] !== undefined) return sum + item.amount;
+    return sum;
+  }, 0);
+  const leftToAssign = total - assignedTotal;
+
   // Split Items view
   return (
     <div className="text-on-surface antialiased pb-32">
       <TopBar title="Split Items" showBack onBack={() => { setImage(null); setItems([]); }} />
 
-      <main className="px-5 flex flex-col gap-6">
-        <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant flex items-center justify-between">
+      <main className="px-5 pt-3 flex flex-col gap-6">
+        {/* Receipt card — click to edit title */}
+        <button
+          onClick={() => {
+            const newTitle = prompt("Bill title:", title);
+            if (newTitle?.trim()) setTitle(newTitle.trim());
+          }}
+          className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant flex items-center justify-between text-left hover:border-primary/50 transition-colors active:scale-[0.99]"
+        >
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
               <Receipt className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-on-surface">{title || "Receipt"}</h2>
-              <p className="text-xs text-on-surface-variant">Today</p>
+              <p className="text-xs text-on-surface-variant">Tap to edit name</p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase mb-1">TOTAL</p>
             <p className="text-sm font-semibold text-primary">RM{total.toFixed(2)}</p>
           </div>
-        </section>
+        </button>
 
+        {/* Participants legend + Add button */}
         <section className="flex gap-3 overflow-x-auto pb-1">
           {validParticipants.map((p, i) => (
             <div key={i} className="flex flex-col items-center gap-1 shrink-0">
@@ -277,11 +309,33 @@ function ScanPageContent() {
               <span className="text-[10px] font-semibold text-on-surface">{p.name}</span>
             </div>
           ))}
+          <button
+            onClick={() => {
+              const n = prompt("Add person:");
+              if (n?.trim()) {
+                setParticipants([...participants, { name: n.trim() }]);
+                // Auto-save to contacts
+                try {
+                  const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+                  if (!contacts.some((c: any) => c.name.toLowerCase() === n.trim().toLowerCase())) {
+                    contacts.push({ name: n.trim() });
+                    localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
+                  }
+                } catch {}
+              }
+            }}
+            className="flex flex-col items-center gap-1 shrink-0 active:scale-90 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
+              <span className="text-outline group-hover:text-primary text-lg leading-none">+</span>
+            </div>
+            <span className="text-[10px] font-semibold text-primary">Add</span>
+          </button>
         </section>
 
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1">TAP AVATARS TO ASSIGN</h3>
-          {items.map((item, i) => {
+          {items.filter(item => item.amount > 0).map((item, i) => {
             const isFee = isFeeItem(item.name);
             return (
             <div key={i} className={`bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border ${isFee ? "border-success/20 bg-success-container/5" : "border-outline-variant"}`}>
@@ -320,45 +374,17 @@ function ScanPageContent() {
             );
           })}
         </section>
-
-        <div>
-          <Label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 block">Bill Title</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface-container-lowest border-outline-variant rounded-xl" />
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Split between</Label>
-            <button onClick={addParticipant} className="text-xs text-primary font-semibold hover:underline">+ Add</button>
-          </div>
-          {participants.map((p, i) => (
-            <Input
-              key={i}
-              value={p.name}
-              onChange={(e) => {
-                const next = [...participants];
-                next[i] = { name: e.target.value };
-                setParticipants(next);
-              }}
-              placeholder={i === 0 ? "You" : `Person ${i + 1}`}
-              className="bg-surface-container-lowest border-outline-variant rounded-xl"
-              disabled={i === 0}
-            />
-          ))}
-        </div>
       </main>
 
       <div className="fixed bottom-16 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase">YOUR TOTAL</p>
-            <p className="text-xl font-bold text-primary">
-              RM{validParticipants.length > 0 ? (total / validParticipants.length).toFixed(2) : "0.00"}
-            </p>
+            <p className="text-xl font-bold text-primary">RM{myTotal.toFixed(2)}</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase">LEFT TO ASSIGN</p>
-            <p className="text-sm font-semibold text-success">RM0.00</p>
+            <p className={`text-sm font-semibold ${leftToAssign <= 0 ? "text-success" : "text-error"}`}>RM{Math.max(leftToAssign, 0).toFixed(2)}</p>
           </div>
         </div>
         <Button onClick={createBill} disabled={creating} className="w-full bg-primary text-primary-foreground h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
