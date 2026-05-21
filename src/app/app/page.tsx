@@ -75,7 +75,7 @@ export default function AppHomePage() {
           <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center group-hover:scale-110 transition-transform">
             <span className="text-2xl">📄</span>
           </div>
-          <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Scan Receipt</span>
+          <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Upload</span>
         </button>
         <button
           onClick={() => {

@@ -34,7 +34,7 @@ export default function LandingPage() {
             className="inline-flex items-center justify-center h-12 px-8 rounded-xl border border-outline-variant hover:bg-surface-container-low transition-colors font-medium text-on-surface"
           >
             <ScanLine className="mr-2 w-4 h-4" />
-            Scan a Receipt
+            Upload a Receipt
           </Link>
         </div>
       </section>

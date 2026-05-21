@@ -43,7 +43,7 @@ export default function HistoryPage() {
         </p>
         <Button variant="outline" className="rounded-xl" onClick={() => router.push("/app/scan")}>
           <Receipt className="w-4 h-4 mr-2" />
-          Scan a receipt
+          Upload a receipt
         </Button>
       </div>
     );
