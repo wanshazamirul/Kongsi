@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
+import { TopBar } from "@/components/top-bar";
 
 interface Participant {
   id: string;
@@ -107,18 +108,9 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Top App Bar */}
-      <header className="bg-surface shadow-[0px_4px_20px_rgba(15,23,42,0.05)] w-full top-0 sticky z-50">
-        <div className="flex justify-between items-center w-full px-5 h-12">
-          <a href="/app" className="text-primary hover:bg-surface-container-low transition-colors rounded-full p-2">
-            <ArrowLeft className="w-5 h-5" />
-          </a>
-          <h1 className="text-lg font-bold text-primary">Kongsi</h1>
-          <div className="w-10" />
-        </div>
-      </header>
+      <TopBar />
 
-      <main className="max-w-2xl mx-auto px-5 pt-6 pb-8 flex flex-col gap-8">
+      <main className="max-w-2xl mx-auto px-5 pt-16 pb-8 flex flex-col gap-8">
         {/* Title */}
         <section className="flex flex-col gap-3">
           <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>
