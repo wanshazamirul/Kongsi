@@ -113,7 +113,7 @@ export default function CreateBillPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/app")}
           className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

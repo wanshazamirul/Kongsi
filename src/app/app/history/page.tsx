@@ -41,7 +41,7 @@ export default function HistoryPage() {
         <p className="text-sm text-muted-foreground text-center">
           Bills you create will appear here. Tap the scan button to get started.
         </p>
-        <Button variant="outline" className="rounded-xl" onClick={() => router.push("/scan")}>
+        <Button variant="outline" className="rounded-xl" onClick={() => router.push("/app/scan")}>
           <Receipt className="w-4 h-4 mr-2" />
           Scan a receipt
         </Button>

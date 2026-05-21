@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Upload, Loader2, ArrowLeft, Receipt, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,16 @@ export default function ScanPage() {
   const [title, setTitle] = useState("");
   const [participants, setParticipants] = useState<{ name: string }[]>([{ name: "" }]);
   const [creating, setCreating] = useState(false);
+
+  // Auto-load image from camera capture (bottom nav scan button)
+  useEffect(() => {
+    const stored = sessionStorage.getItem("kongsi_scan_image");
+    if (stored) {
+      sessionStorage.removeItem("kongsi_scan_image");
+      setImage(stored);
+      scanReceipt(stored);
+    }
+  }, []);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -120,7 +130,7 @@ export default function ScanPage() {
     <div className="max-w-lg mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.push("/")} className="p-2 -ml-2 rounded-lg hover:bg-muted">
+        <button onClick={() => router.push("/app")} className="p-2 -ml-2 rounded-lg hover:bg-muted">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-xl font-bold">Scan Receipt</h1>
@@ -150,7 +160,7 @@ export default function ScanPage() {
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => router.push("/create")}
+            onClick={() => router.push("/app/create")}
           >
             <Receipt className="w-4 h-4 mr-2" />
             Enter manually
