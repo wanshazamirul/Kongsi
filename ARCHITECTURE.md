@@ -59,10 +59,11 @@ Split bill payment tracker. Malaysian kopitiam-themed. KrackedDevs bounty (RM 50
 
 ## Design
 
-- **Theme**: Kopitiam/warung aesthetic. Light mode default (bright mamak). Amber accents.
-- **Color**: OKLCH, warm whites tinted toward amber, restained accent usage
-- **Anti-patterns avoided**: No AI gradients, no identical card grids, no glassmorphism, no dark-default
-- **Components**: PaidStamp (spring animation), ProgressKopi (coffee cup fill), ConfettiBurst
+- **Theme**: Modern Malaysian fintech. Dark-default, emerald green accent. Clean, premium.
+- **Color**: OKLCH, neutrals tinted toward emerald (hue 160), restrained accent usage (60-30-10)
+- **Typography**: System font stack, number-forward layouts, big amounts
+- **Anti-patterns avoided**: No AI gradients, no identical card grids, no glassmorphism, no side-stripe borders, no bounce animations
+- **Components**: PaidStamp (emerald spring seal), ProgressRing (SVG donut), ConfettiBurst (emerald/lime/gold)
 
 ## PocketBase Setup
 

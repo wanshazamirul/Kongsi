@@ -47,7 +47,7 @@ export function BottomNav() {
           <Link
             href="/app"
             className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-lg transition-colors ${
-              isActive("/app") ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground hover:text-foreground"
+              isActive("/app") ? "text-emerald-500 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Receipt className="w-5 h-5" />
@@ -59,7 +59,7 @@ export function BottomNav() {
             onClick={() => fileRef.current?.click()}
             className="relative -mt-6 flex flex-col items-center"
           >
-            <div className="w-14 h-14 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white dark:text-black flex items-center justify-center shadow-lg transition-all active:scale-95">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
               <ScanLine className="w-7 h-7" />
             </div>
             <span className="text-[10px] font-medium mt-1 text-muted-foreground">
@@ -71,7 +71,7 @@ export function BottomNav() {
           <Link
             href="/app/history"
             className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-lg transition-colors ${
-              isActive("/app/history") ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground hover:text-foreground"
+              isActive("/app/history") ? "text-emerald-500 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Clock className="w-5 h-5" />

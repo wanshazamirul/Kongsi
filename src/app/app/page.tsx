@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, Plus, ArrowRight, ScanLine, Coffee } from "lucide-react";
+import { Receipt, Plus, ArrowRight, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatRM } from "@/lib/utils";
@@ -31,17 +31,17 @@ export default function LandingPage() {
       {/* Header */}
       <header className="px-4 pt-6 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
-            <Coffee className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center">
+            <Receipt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
             <h1 className="text-lg font-bold leading-tight">Kongsi</h1>
-            <p className="text-[10px] text-muted-foreground leading-tight">Split bills, not friendships</p>
+            <p className="text-[10px] text-muted-foreground leading-tight">Split. Share. Settled.</p>
           </div>
         </div>
         <Button
           size="sm"
-          className="rounded-lg bg-amber-500 hover:bg-amber-600 text-white dark:text-black h-9 text-sm"
+          className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm"
           onClick={() => router.push("/app/create")}
         >
           <Plus className="w-4 h-4 mr-1" />
@@ -55,12 +55,12 @@ export default function LandingPage() {
           /* First visit — guided actions */
           <div className="pt-16 pb-8 text-center">
             <div className="mb-8">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 flex items-center justify-center">
-                <Receipt className="w-10 h-10 text-amber-400/70" />
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/10 flex items-center justify-center">
+                <Receipt className="w-10 h-10 text-emerald-400/70" />
               </div>
               <h2 className="text-xl font-bold mb-2 text-foreground">
                 Split bills,{" "}
-                <span className="text-amber-600 dark:text-amber-400">Malaysian style</span>
+                <span className="text-emerald-500 dark:text-emerald-400">the easy way</span>
               </h2>
               <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
                 Scan a restaurant receipt or enter manually. Share via WhatsApp. Track who paid.
@@ -69,7 +69,7 @@ export default function LandingPage() {
 
             <div className="space-y-3 max-w-xs mx-auto">
               <Button
-                className="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white dark:text-black font-medium"
+                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                 onClick={() => router.push("/app/scan")}
               >
                 <ScanLine className="w-5 h-5 mr-2" />
@@ -114,7 +114,7 @@ export default function LandingPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-4">
-                      <span className="font-semibold text-amber-600 dark:text-amber-400">{formatRM(bill.total_amount)}</span>
+                      <span className="font-semibold text-emerald-500 dark:text-emerald-400">{formatRM(bill.total_amount)}</span>
                       <ArrowRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
                     </div>
                   </div>

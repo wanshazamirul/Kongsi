@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const COLORS = ["#f59e0b", "#ef4444", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#14b8a6"];
+const COLORS = ["#10b981", "#059669", "#84cc16", "#fbbf24", "#34d399", "#a3e635", "#facc15"];
 
 function randomBetween(a: number, b: number) {
   return Math.random() * (b - a) + a;

@@ -86,7 +86,6 @@ export default function CreateBillPage() {
 
     if (res.ok) {
       const data = await res.json();
-      // Save to local history
       try {
         const stored = localStorage.getItem("kongsi_bills");
         const bills = stored ? JSON.parse(stored) : [];
@@ -159,13 +158,14 @@ export default function CreateBillPage() {
           </div>
         </Card>
 
-        {/* Receipt Scanner placeholder */}
+        {/* Receipt Scanner shortcut */}
         <button
           type="button"
-          className="w-full rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-center gap-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors"
+          className="w-full rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 p-3 flex items-center justify-center gap-2 text-sm text-emerald-500 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+          onClick={() => router.push("/app/scan")}
         >
           <Camera className="w-4 h-4" />
-          Scan Receipt (coming soon)
+          Scan Receipt instead
         </button>
 
         {/* Participants */}
@@ -235,7 +235,7 @@ export default function CreateBillPage() {
         <Button
           type="submit"
           disabled={submitting}
-          className="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+          className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
         >
           {submitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />

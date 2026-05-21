@@ -2,12 +2,12 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, Copy, CheckCircle2, Clock, Coffee, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, Copy, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProgressKopi } from "@/components/progress-kopi";
+import { ProgressRing } from "@/components/progress-ring";
 import { ConfettiBurst } from "@/components/confetti-burst";
 import { PaidStamp } from "@/components/paid-stamp";
 import { toast } from "sonner";
@@ -74,7 +74,7 @@ function DashboardContent() {
   if (!token) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Coffee className="w-12 h-12 text-muted-foreground" />
+        <Receipt className="w-12 h-12 text-muted-foreground" />
         <p className="text-muted-foreground text-lg">Missing admin token</p>
         <p className="text-xs text-muted-foreground">Use the full dashboard link from when you created the bill.</p>
       </div>
@@ -92,7 +92,7 @@ function DashboardContent() {
   if (error || !bill) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Coffee className="w-12 h-12 text-muted-foreground" />
+        <Receipt className="w-12 h-12 text-muted-foreground" />
         <p className="text-muted-foreground text-lg">{error || "Bill not found"}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
       </div>
@@ -122,11 +122,11 @@ function DashboardContent() {
       <div className="grid grid-cols-2 gap-3 mb-5">
         <Card className="p-4">
           <p className="text-xs text-muted-foreground mb-1">Collected</p>
-          <p className="text-2xl font-bold text-green-400">{formatRM(totalPaid)}</p>
+          <p className="text-2xl font-bold text-emerald-400">{formatRM(totalPaid)}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-          <p className={`text-2xl font-bold ${remaining <= 0 ? "text-muted-foreground" : "text-amber-400"}`}>
+          <p className={`text-2xl font-bold ${remaining <= 0 ? "text-muted-foreground" : "text-foreground"}`}>
             {formatRM(remaining)}
           </p>
         </Card>
@@ -134,7 +134,7 @@ function DashboardContent() {
 
       {/* Progress */}
       <Card className="p-4 mb-5">
-        <ProgressKopi
+        <ProgressRing
           progress={progress}
           label="Collection Progress"
           sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
@@ -147,20 +147,20 @@ function DashboardContent() {
           Participants ({paidCount}/{bill.participants.length})
         </h2>
         <AnimatePresence>
-          {bill.participants.map((p) => (
+          {bill.participants.map((p, i) => (
             <motion.div
               key={p.id}
               initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20, delay: i * 0.05 }}
             >
-              <Card className={`p-3 flex items-center justify-between relative overflow-hidden ${p.paid ? "opacity-70 border-green-500/20" : ""}`}>
+              <Card className={`p-3 flex items-center justify-between relative overflow-hidden ${p.paid ? "opacity-70 border-emerald-500/20" : ""}`}>
                 {p.paid && <PaidStamp />}
                 <div className="flex items-center gap-3">
                   {p.paid ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   ) : (
-                    <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                    <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                   )}
                   <div>
                     <p className="text-sm font-medium">{p.name}</p>
@@ -185,7 +185,7 @@ function DashboardContent() {
 
       {/* Share buttons */}
       <div className="space-y-2">
-        <Button onClick={shareWhatsApp} className="w-full h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white">
+        <Button onClick={shareWhatsApp} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
           <Share2 className="w-4 h-4 mr-2" />
           Share via WhatsApp
         </Button>
@@ -198,7 +198,7 @@ function DashboardContent() {
       <ConfettiBurst trigger={allPaid} />
       {allPaid && (
         <div className="mt-6 text-center">
-          <p className="text-lg font-bold text-green-400">🎉 All collected!</p>
+          <p className="text-lg font-bold text-emerald-400">All collected!</p>
           <p className="text-xs text-muted-foreground mt-1">Everyone has paid. Bil settle!</p>
         </div>
       )}

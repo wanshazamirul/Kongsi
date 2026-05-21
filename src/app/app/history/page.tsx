@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, ArrowRight, Coffee, Trash2, Receipt } from "lucide-react";
+import { Clock, ArrowRight, Trash2, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatRM } from "@/lib/utils";
@@ -79,7 +79,7 @@ export default function HistoryPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-amber-400">{formatRM(bill.total_amount)}</span>
+                <span className="font-semibold text-emerald-500 dark:text-emerald-400">{formatRM(bill.total_amount)}</span>
                 <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>

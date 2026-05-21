@@ -3,10 +3,11 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Kongsi — Split Bills, Not Friendships",
+  title: "Kongsi — Split. Share. Settled.",
   description: "Malaysian split bill tracker. Scan receipts, split bills, share via WhatsApp. No login needed.",
+  icons: { icon: "/icon.png" },
   openGraph: {
-    title: "Kongsi — Split Bills, Not Friendships",
+    title: "Kongsi — Split. Share. Settled.",
     description: "Scan receipts, split bills, share via WhatsApp.",
   },
 };

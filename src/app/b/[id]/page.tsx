@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Share2, CheckCircle2, Clock, Coffee, Loader2, Printer } from "lucide-react";
+import { Share2, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaidStamp } from "@/components/paid-stamp";
-import { ProgressKopi } from "@/components/progress-kopi";
+import { ProgressRing } from "@/components/progress-ring";
 import { ConfettiBurst } from "@/components/confetti-burst";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
@@ -57,7 +57,7 @@ export default function PublicBillPage() {
 
     if (res.ok) {
       await loadBill();
-      toast.success("Payment confirmed! 🎉");
+      toast.success("Payment confirmed!");
       checkAllPaid();
     } else {
       const err = await res.json();
@@ -71,7 +71,7 @@ export default function PublicBillPage() {
     if (!bill) return;
     const allPaid = bill.participants.every((p) => p.paid);
     if (allPaid) {
-      toast.success("All paid up! 🎊", { duration: 5000 });
+      toast.success("All paid up!", { duration: 5000 });
     }
   }
 
@@ -97,7 +97,7 @@ export default function PublicBillPage() {
   if (!bill) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Coffee className="w-12 h-12 text-muted-foreground" />
+        <Receipt className="w-12 h-12 text-muted-foreground" />
         <p className="text-muted-foreground text-lg">Bill not found</p>
         <p className="text-xs text-muted-foreground">The link might be broken or the bill was deleted.</p>
       </div>
@@ -113,14 +113,14 @@ export default function PublicBillPage() {
     <div className="min-h-screen max-w-lg mx-auto px-4 py-6">
       {/* Header */}
       <div className="text-center mb-6">
-        <div className="mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <Coffee className="w-6 h-6 text-amber-400" />
+        <div className="mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+          <Receipt className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
         </div>
         <h1 className="text-xl font-bold">{bill.title}</h1>
         {bill.description && (
           <p className="text-sm text-muted-foreground mt-1">{bill.description}</p>
         )}
-        <p className="text-3xl font-bold mt-3 text-amber-400">{formatRM(bill.total_amount)}</p>
+        <p className="text-3xl font-bold mt-3 text-emerald-500 dark:text-emerald-400">{formatRM(bill.total_amount)}</p>
         {bill.due_date && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
             <Clock className="w-3 h-3" />
@@ -131,7 +131,7 @@ export default function PublicBillPage() {
 
       {/* Progress */}
       <Card className="p-4 mb-5">
-        <ProgressKopi
+        <ProgressRing
           progress={progress}
           label="Collection Progress"
           sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
@@ -142,18 +142,18 @@ export default function PublicBillPage() {
       <div className="space-y-2 mb-6">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Participants</h2>
         <AnimatePresence>
-          {bill.participants.map((p) => (
+          {bill.participants.map((p, i) => (
             <motion.div
               key={p.id}
               initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20, delay: i * 0.05 }}
             >
-              <Card className={`p-3 flex items-center justify-between transition-all relative overflow-hidden ${p.paid ? "opacity-70 border-green-500/20" : ""}`}>
+              <Card className={`p-3 flex items-center justify-between transition-all relative overflow-hidden ${p.paid ? "opacity-70 border-emerald-500/20" : ""}`}>
                 {p.paid && <PaidStamp />}
                 <div className="flex items-center gap-3">
                   {p.paid ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0" />
                   )}
@@ -173,8 +173,7 @@ export default function PublicBillPage() {
                   {!p.paid && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-7 text-xs rounded-lg border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                      className="h-7 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => setSelectedParticipant(p.id)}
                       disabled={payingId === p.id}
                     >
@@ -190,19 +189,20 @@ export default function PublicBillPage() {
       <ConfettiBurst trigger={allPaid} />
 
       {/* Share button */}
-      <Button onClick={shareBill} className="w-full h-11 rounded-xl" variant="outline">
+      <Button onClick={shareBill} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
         <Share2 className="w-4 h-4 mr-2" />
         Share via WhatsApp
       </Button>
 
       <p className="text-center text-[10px] text-muted-foreground mt-4">
-        Powered by Kongsi — Split bills, not friendships.
+        Powered by Kongsi — Split. Share. Settled.
       </p>
 
-      {/* Confirm payment dialog (simple inline) */}
+      {/* Inline confirm dialog */}
       {selectedParticipant && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <Card className="p-6 max-w-sm w-full text-center space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedParticipant(null)} />
+          <Card className="relative p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
             <p className="text-sm">
               Confirm payment for{" "}
               <span className="font-semibold">
@@ -222,7 +222,7 @@ export default function PublicBillPage() {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-black"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={() => confirmPayment(selectedParticipant)}
                 disabled={payingId === selectedParticipant}
               >

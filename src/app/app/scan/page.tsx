@@ -24,7 +24,6 @@ export default function ScanPage() {
   const [participants, setParticipants] = useState<{ name: string }[]>([{ name: "" }]);
   const [creating, setCreating] = useState(false);
 
-  // Auto-load image from camera capture (bottom nav scan button)
   useEffect(() => {
     const stored = sessionStorage.getItem("kongsi_scan_image");
     if (stored) {
@@ -141,13 +140,13 @@ export default function ScanPage() {
         <div className="space-y-4">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full rounded-2xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-colors p-12 flex flex-col items-center gap-4"
+            className="w-full rounded-2xl border-2 border-dashed border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors p-12 flex flex-col items-center gap-4"
           >
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-              <Camera className="w-8 h-8 text-amber-400" />
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+              <Camera className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div className="text-center">
-              <p className="font-medium text-amber-400">Tap to scan receipt</p>
+              <p className="font-medium text-emerald-500 dark:text-emerald-400">Tap to scan receipt</p>
               <p className="text-xs text-muted-foreground mt-1">Take a photo of your bill or receipt</p>
             </div>
           </button>
@@ -213,7 +212,7 @@ export default function ScanPage() {
                 ))}
                 {items.length > 0 && (
                   <p className="text-xs text-muted-foreground text-right">
-                    Total: <span className="font-semibold text-amber-400">RM{total.toFixed(2)}</span>
+                    Total: <span className="font-semibold text-emerald-500 dark:text-emerald-400">RM{total.toFixed(2)}</span>
                   </p>
                 )}
               </div>
@@ -258,7 +257,7 @@ export default function ScanPage() {
               <Button
                 onClick={createBill}
                 disabled={creating}
-                className="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create & Share Bill"}
               </Button>
