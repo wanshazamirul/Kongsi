@@ -1,65 +1,62 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { Receipt, Share2, Users, Zap, Coffee } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export default function LandingPage() {
+  const router = useRouter();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gradient-to-b from-amber-950/20 to-background">
+      {/* Hero */}
+      <section className="relative px-6 pt-20 pb-16 md:pt-32 md:pb-24 max-w-2xl mx-auto text-center">
+        <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+          <Coffee className="w-8 h-8 text-amber-400" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          Kongsi{" "}
+          <span className="text-amber-400">Bil</span>, Tak Payung
+        </h1>
+        <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
+          Split bills the Malaysian way. Create a bill, share via WhatsApp, and
+          track who paid — no login, no fuss.
+        </p>
+        <Button
+          size="lg"
+          className="rounded-full px-8 h-12 text-base bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+          onClick={() => router.push("/create")}
+        >
+          Create a Bill
+          <Receipt className="ml-2 w-4 h-4" />
+        </Button>
+      </section>
+
+      {/* Features */}
+      <section className="px-6 pb-24 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { icon: Receipt, title: "Create & Split", desc: "Add items or total amount, split by person, set a due date." },
+            { icon: Share2, title: "Share via WhatsApp", desc: "One tap to share the bill link. Friends open and confirm — no app install." },
+            { icon: Users, title: "Track Payments", desc: "See who paid and who hasn't. Progress bar fills up as payments come in." },
+          ].map((f) => (
+            <div key={f.title} className="rounded-xl border border-border bg-card/50 p-5 hover:bg-card/80 transition-colors">
+              <f.icon className="w-5 h-5 text-amber-400 mb-3" />
+              <h3 className="font-semibold text-sm mb-1">{f.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <p className="text-xs text-muted-foreground mb-6 flex items-center justify-center gap-1.5">
+            <Zap className="w-3 h-3 text-amber-400" />
+            No login. No app. Just a link.
           </p>
+          <Button variant="outline" className="rounded-full" onClick={() => router.push("/create")}>
+            Get Started
+          </Button>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
     </div>
   );
 }
