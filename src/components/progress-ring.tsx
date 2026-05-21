@@ -4,21 +4,18 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect } from "react";
 
 interface Props {
-  progress: number; // 0-100
-  label: string;
+  progress: number;
+  label?: string;
   sublabel?: string;
 }
 
 export function ProgressRing({ progress, label, sublabel }: Props) {
-  const radius = 52;
+  const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.min(Math.max(progress, 0), 100);
 
   const motionProgress = useMotionValue(0);
-  const springProgress = useSpring(motionProgress, {
-    stiffness: 80,
-    damping: 15,
-  });
+  const springProgress = useSpring(motionProgress, { stiffness: 80, damping: 15 });
   const displayProgress = useTransform(springProgress, (v) => Math.round(v));
 
   useEffect(() => {
@@ -26,57 +23,33 @@ export function ProgressRing({ progress, label, sublabel }: Props) {
   }, [clamped, motionProgress]);
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative w-32 h-32 flex items-center justify-center">
-        <svg viewBox="0 0 120 120" className="w-32 h-32 -rotate-90">
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative w-24 h-24 flex items-center justify-center">
+        <svg viewBox="0 0 100 100" className="w-24 h-24 -rotate-90">
           <defs>
-            <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="oklch(0.52 0.16 160)" />
-              <stop offset="100%" stopColor="oklch(0.62 0.15 160)" />
+            <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="oklch(0.48 0.2 280)" />
+              <stop offset="100%" stopColor="oklch(0.6 0.18 280)" />
             </linearGradient>
           </defs>
-          {/* Track */}
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            className="text-muted"
-            strokeWidth="8"
-            strokeLinecap="round"
-          />
-          {/* Progress */}
+          <circle cx="50" cy="50" r={radius} fill="none" className="text-surface-container-high" stroke="currentColor" strokeWidth="8" />
           <motion.circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="url(#emeraldGradient)"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
+            cx="50" cy="50" r={radius} fill="none" stroke="url(#ringGradient)" strokeWidth="8"
+            strokeLinecap="round" strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
-            animate={{
-              strokeDashoffset: circumference - (clamped / 100) * circumference,
-            }}
+            animate={{ strokeDashoffset: circumference - (clamped / 100) * circumference }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           />
         </svg>
-        {/* Center percentage */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <motion.span className="text-2xl font-bold tracking-tight tabular-nums text-foreground">
+          <motion.span className="text-lg font-bold tracking-tight tabular-nums text-on-surface">
             {displayProgress}
           </motion.span>
-          <span className="text-sm text-foreground">%</span>
+          <span className="text-xs text-on-surface">%</span>
         </div>
       </div>
-      <div className="text-center">
-        <p className="text-sm font-medium">{label}</p>
-        {sublabel && (
-          <p className="text-[11px] text-muted-foreground mt-0.5">{sublabel}</p>
-        )}
-      </div>
+      {label && <p className="text-xs font-semibold text-on-surface">{label}</p>}
+      {sublabel && <p className="text-[10px] text-on-surface-variant">{sublabel}</p>}
     </div>
   );
 }

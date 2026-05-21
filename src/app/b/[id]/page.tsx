@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Share2, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
+import { Share2, Lock, Loader2, Receipt } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PaidStamp } from "@/components/paid-stamp";
-import { ProgressRing } from "@/components/progress-ring";
 import { ConfettiBurst } from "@/components/confetti-burst";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
@@ -35,11 +33,10 @@ export default function PublicBillPage() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
-  const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
+  const [paid, setPaid] = useState(false);
+  const [showAllPaid, setShowAllPaid] = useState(false);
 
-  useEffect(() => {
-    loadBill();
-  }, [id]);
+  useEffect(() => { loadBill(); }, [id]);
 
   async function loadBill() {
     const res = await fetch(`/api/bills/${id}`);
@@ -57,41 +54,27 @@ export default function PublicBillPage() {
 
     if (res.ok) {
       await loadBill();
+      setPaid(true);
       toast.success("Payment confirmed!");
-      checkAllPaid();
+      const updated = await fetch(`/api/bills/${id}`).then((r) => r.json());
+      const allPaid = updated.participants.every((p: Participant) => p.paid);
+      if (allPaid) setShowAllPaid(true);
     } else {
       const err = await res.json();
       toast.error(err.error || "Failed to confirm");
     }
     setPayingId(null);
-    setSelectedParticipant(null);
-  }
-
-  function checkAllPaid() {
-    if (!bill) return;
-    const allPaid = bill.participants.every((p) => p.paid);
-    if (allPaid) {
-      toast.success("All paid up!", { duration: 5000 });
-    }
   }
 
   function shareBill() {
     const url = window.location.href;
-    const text = `Kongsi Bil: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\n${url}`;
-    if (navigator.share) {
-      navigator.share({ title: bill?.title, text, url });
-    } else {
-      navigator.clipboard.writeText(text);
-      toast.success("Link copied!");
-    }
+    const text = `Kongsi: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\n${url}`;
+    if (navigator.share) navigator.share({ title: bill?.title, text, url });
+    else { navigator.clipboard.writeText(text); toast.success("Link copied!"); }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
 
   if (!bill) {
@@ -104,134 +87,115 @@ export default function PublicBillPage() {
     );
   }
 
-  const paidCount = bill.participants.filter((p) => p.paid).length;
-  const totalPaid = bill.participants.filter((p) => p.paid).reduce((s, p) => s + p.amount, 0);
-  const progress = bill.total_amount > 0 ? (totalPaid / bill.total_amount) * 100 : 0;
-  const allPaid = paidCount === bill.participants.length;
+  const allPaid = bill.participants.every((p) => p.paid);
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <div className="mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <Receipt className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
-        </div>
-        <h1 className="text-xl font-bold">{bill.title}</h1>
-        {bill.description && (
-          <p className="text-sm text-muted-foreground mt-1">{bill.description}</p>
-        )}
-        <p className="text-3xl font-bold mt-3 text-emerald-500 dark:text-emerald-400">{formatRM(bill.total_amount)}</p>
-        {bill.due_date && (
-          <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
-            <Clock className="w-3 h-3" />
-            Due {new Date(bill.due_date.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
-          </p>
-        )}
+    <div className="min-h-screen flex flex-col items-center justify-center p-5 relative overflow-hidden">
+      {/* Ambient background blobs */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/10 blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-success-container/30 blur-[120px]" />
       </div>
 
-      {/* Progress */}
-      <Card className="p-4 mb-5">
-        <ProgressRing
-          progress={progress}
-          label="Collection Progress"
-          sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
-        />
-      </Card>
+      <header className="w-full flex justify-center items-center py-4 z-10">
+        <div className="font-semibold text-lg text-primary tracking-tight">Kongsi</div>
+      </header>
 
-      {/* Participants */}
-      <div className="space-y-2 mb-6">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Participants</h2>
-        <AnimatePresence>
-          {bill.participants.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20, delay: i * 0.05 }}
-            >
-              <Card className={`p-3 flex items-center justify-between transition-all relative overflow-hidden ${p.paid ? "opacity-70 border-emerald-500/20" : ""}`}>
-                {p.paid && <PaidStamp />}
-                <div className="flex items-center gap-3">
-                  {p.paid ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0" />
-                  )}
-                  <div>
-                    <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>
-                      {p.name}
-                    </p>
-                    {p.paid && p.paid_at && (
-                      <p className="text-[10px] text-muted-foreground">
-                        {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
+      <main className="flex-1 flex flex-col items-center justify-center z-10 w-full max-w-md mx-auto">
+        {/* Payment card */}
+        <article className="w-full bg-surface-container-lowest/90 backdrop-blur-xl rounded-[24px] shadow-[0px_10px_30px_rgba(15,23,42,0.1)] overflow-hidden border border-white/20">
+          {/* Hero */}
+          <div className="p-8 flex flex-col items-center text-center border-b border-outline-variant">
+            <div className="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center mb-4 shadow-sm">
+              <Receipt className="w-10 h-10 text-primary" />
+            </div>
+            <p className="text-on-surface-variant mb-1">
+              <strong className="text-on-surface font-semibold">{bill.participants[0]?.name || "Someone"}</strong> invited you to pay for
+            </p>
+            <h1 className="text-xl font-bold text-on-surface mt-1">{bill.title}</h1>
+            <div className="mt-6">
+              <span className="text-xs text-on-surface-variant uppercase tracking-wider block mb-1">Amount Due</span>
+              <span className="text-5xl font-bold text-primary">RM{bill.total_amount.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Split breakdown */}
+          <div className="p-6 bg-surface-container-lowest">
+            <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Split Breakdown</h2>
+            <ul className="space-y-3">
+              {bill.participants.map((p) => (
+                <li key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-semibold text-sm">
+                      {p.name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm font-semibold text-on-surface">{p.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-semibold ${p.paid ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
+                      RM{p.amount.toFixed(2)}
+                    </span>
+                    {p.paid ? (
+                      <span className="px-3 py-1 rounded-full bg-success-container/30 text-success text-[10px] font-semibold flex items-center gap-1">
+                        ✓ Paid
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full bg-surface-variant text-on-surface-variant text-[10px] font-semibold flex items-center gap-1">
+                        ⏳ Pending
+                      </span>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{formatRM(p.amount)}</span>
-                  {!p.paid && (
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-                      onClick={() => setSelectedParticipant(p.id)}
-                      disabled={payingId === p.id}
-                    >
-                      {payingId === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Pay"}
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-      <ConfettiBurst trigger={allPaid} />
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      {/* Share button */}
-      <Button onClick={shareBill} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
-        <Share2 className="w-4 h-4 mr-2" />
-        Share via WhatsApp
-      </Button>
-
-      <p className="text-center text-[10px] text-muted-foreground mt-4">
-        Powered by Kongsi — Split. Share. Settled.
-      </p>
-
-      {/* Inline confirm dialog */}
-      {selectedParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedParticipant(null)} />
-          <Card className="relative p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
-            <p className="text-sm">
-              Confirm payment for{" "}
-              <span className="font-semibold">
-                {bill.participants.find((p) => p.id === selectedParticipant)?.name}
-              </span>
-              ?
-            </p>
-            <p className="text-xs text-muted-foreground">
-              This is a simulated payment. No real money will be transferred.
-            </p>
-            <div className="flex gap-2">
+          {/* Action */}
+          <div className="p-6 pt-0 bg-surface-container-lowest">
+            {!allPaid && !paid && (
               <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setSelectedParticipant(null)}
+                onClick={() => {
+                  // Pay for first unpaid participant
+                  const firstUnpaid = bill.participants.find((p) => !p.paid);
+                  if (firstUnpaid) confirmPayment(firstUnpaid.id);
+                }}
+                disabled={payingId !== null}
+                className="w-full h-12 bg-primary hover:opacity-90 text-primary-foreground rounded-xl text-lg font-semibold flex items-center justify-center gap-2 shadow-[0px_4px_12px_rgba(70,72,212,0.3)] hover:shadow-[0px_6px_16px_rgba(70,72,212,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
               >
-                Cancel
+                {payingId ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                  <>
+                    <span>Confirm Payment</span>
+                  </>
+                )}
               </Button>
-              <Button
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => confirmPayment(selectedParticipant)}
-                disabled={payingId === selectedParticipant}
-              >
-                {payingId === selectedParticipant ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+            )}
+            {paid && !allPaid && (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-success-container text-success mx-auto mb-3 flex items-center justify-center">
+                  <span className="text-3xl">✓</span>
+                </div>
+                <p className="font-bold text-success text-lg">Payment Confirmed!</p>
+                <p className="text-sm text-on-surface-variant mt-1">You're all settled up.</p>
+              </div>
+            )}
+            {allPaid && (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-success-container text-success mx-auto mb-3 flex items-center justify-center">
+                  <span className="text-3xl">🎉</span>
+                </div>
+                <p className="font-bold text-success text-lg">All Paid Up!</p>
+                <p className="text-sm text-on-surface-variant mt-1">Everyone has paid. Bil settle!</p>
+              </div>
+            )}
+            <p className="text-xs text-on-surface-variant text-center mt-4 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" />
+              The organizer will be notified instantly
+            </p>
+          </div>
+        </article>
+      </main>
+
+      <ConfettiBurst trigger={showAllPaid || allPaid} />
     </div>
   );
 }

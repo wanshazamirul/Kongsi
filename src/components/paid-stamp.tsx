@@ -11,7 +11,7 @@ export function PaidStamp() {
       transition={{ type: "spring", stiffness: 200, damping: 12 }}
       className="absolute top-2 right-2 pointer-events-none select-none"
     >
-      <div className="border-2 border-emerald-400/70 text-emerald-400/80 rounded-lg px-2.5 py-1 -rotate-6 flex items-center gap-1 bg-emerald-500/5">
+      <div className="border-2 border-success/70 text-success/80 rounded-lg px-2.5 py-1 -rotate-6 flex items-center gap-1 bg-success-container/20">
         <CheckCircle2 className="w-3.5 h-3.5" />
         <span className="text-sm font-black tracking-widest font-mono">PAID</span>
       </div>

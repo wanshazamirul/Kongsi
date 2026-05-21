@@ -41,6 +41,7 @@ function DashboardContent() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"unpaid" | "paid">("unpaid");
 
   useEffect(() => {
     if (token) loadDashboard();
@@ -66,9 +67,28 @@ function DashboardContent() {
 
   function shareWhatsApp() {
     const url = `${window.location.origin}/b/${id}`;
-    const text = `Kongsi Bil: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\n${url}`;
-    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, "_blank");
+    const text = `Kongsi: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  function nudgeParticipant(p: Participant) {
+    const url = `${window.location.origin}/b/${id}`;
+    const text = `Yo ${p.name}, you still owe RM${p.amount.toFixed(2)} for "${bill?.title}". Please pay here: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    toast.success(`Nudge sent to ${p.name}!`);
+  }
+
+  function remindAll() {
+    if (!bill) return;
+    const unpaid = bill.participants.filter((p) => !p.paid);
+    if (unpaid.length === 0) {
+      toast.success("Everyone has paid!");
+      return;
+    }
+    const url = `${window.location.origin}/b/${id}`;
+    const text = `Reminder: Please pay for "${bill.title}". Here's the link: ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    toast.success(`Nudging ${unpaid.length} people...`);
   }
 
   if (!token) {
@@ -99,83 +119,119 @@ function DashboardContent() {
     );
   }
 
-  const paidCount = bill.participants.filter((p) => p.paid).length;
-  const totalPaid = bill.participants.filter((p) => p.paid).reduce((s, p) => s + p.amount, 0);
+  const paidParticipants = bill.participants.filter((p) => p.paid);
+  const unpaidParticipants = bill.participants.filter((p) => !p.paid);
+  const totalPaid = paidParticipants.reduce((s, p) => s + p.amount, 0);
   const remaining = bill.total_amount - totalPaid;
   const progress = bill.total_amount > 0 ? (totalPaid / bill.total_amount) * 100 : 0;
-  const allPaid = paidCount === bill.participants.length;
+  const allPaid = paidParticipants.length === bill.participants.length;
+  const displayList = tab === "unpaid" ? unpaidParticipants : paidParticipants;
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen max-w-2xl mx-auto px-5 py-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <a href="/" className="p-2 -ml-2 rounded-lg hover:bg-muted transition-colors">
-          <ArrowLeft className="w-5 h-5" />
+        <a href="/app" className="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
+          <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
         </a>
-        <div>
-          <h1 className="text-lg font-bold">{bill.title}</h1>
-          <p className="text-xs text-muted-foreground">Organizer Dashboard</p>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold text-on-surface">{bill.title}</h1>
+          <p className="text-xs text-on-surface-variant">Organizer Dashboard</p>
         </div>
+        <button onClick={shareWhatsApp} className="bg-surface-container-low text-primary hover:bg-surface-container-high transition-colors rounded-full p-2 flex items-center gap-2 px-4">
+          <Share2 className="w-4 h-4" />
+          <span className="text-xs font-bold">Share Link</span>
+        </button>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Collected</p>
-          <p className="text-2xl font-bold text-emerald-400">{formatRM(totalPaid)}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-          <p className={`text-2xl font-bold ${remaining <= 0 ? "text-muted-foreground" : "text-foreground"}`}>
-            {formatRM(remaining)}
-          </p>
-        </Card>
-      </div>
-
-      {/* Progress */}
-      <Card className="p-4 mb-5">
-        <ProgressRing
-          progress={progress}
-          label="Collection Progress"
-          sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
-        />
+      {/* Progress card */}
+      <Card className="p-5 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] mb-5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+            <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Collected</h2>
+            <div className="mt-1">
+              <span className="text-3xl font-bold text-primary">RM{totalPaid.toFixed(2)}</span>
+              <span className="text-lg text-on-surface-variant font-medium"> / RM{bill.total_amount.toFixed(2)}</span>
+            </div>
+          </div>
+          <ProgressRing progress={progress} label="" />
+        </div>
+        <div className="w-full bg-surface-container-high rounded-full h-2 mt-4">
+          <motion.div
+            className="h-2 rounded-full bg-success"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+        <div className="flex justify-between mt-2 text-xs text-on-surface-variant">
+          <span>{Math.round(progress)}% Collected</span>
+          <span>{paidParticipants.length} of {bill.participants.length} Paid</span>
+        </div>
       </Card>
 
-      {/* Participants */}
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-outline-variant pb-2 mb-4">
+        <button
+          onClick={() => setTab("unpaid")}
+          className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "unpaid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+        >
+          Unpaid ({unpaidParticipants.length})
+        </button>
+        <button
+          onClick={() => setTab("paid")}
+          className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "paid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+        >
+          Paid ({paidParticipants.length})
+        </button>
+      </div>
+
+      {/* Participant list */}
       <div className="space-y-2 mb-6">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Participants ({paidCount}/{bill.participants.length})
-        </h2>
-        <AnimatePresence>
-          {bill.participants.map((p, i) => (
+        <AnimatePresence mode="popLayout">
+          {displayList.map((p, i) => (
             <motion.div
               key={p.id}
-              initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20, delay: i * 0.05 }}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ delay: i * 0.03 }}
             >
-              <Card className={`p-3 flex items-center justify-between relative overflow-hidden ${p.paid ? "opacity-70 border-emerald-500/20" : ""}`}>
+              <Card className="p-3 flex items-center justify-between bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] relative overflow-hidden">
                 {p.paid && <PaidStamp />}
                 <div className="flex items-center gap-3">
-                  {p.paid ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                  ) : (
-                    <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  )}
+                  <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-lg">
+                    {p.name[0].toUpperCase()}
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-sm font-semibold text-on-surface">{p.name}</p>
                     {p.paid && p.paid_at && (
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-[11px] text-on-surface-variant">
                         {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </p>
+                    )}
+                    {!p.paid && (
+                      <p className="text-sm font-semibold text-error">RM{p.amount.toFixed(2)}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{formatRM(p.amount)}</span>
-                  <Badge variant={p.paid ? "default" : "secondary"} className="text-[10px]">
-                    {p.paid ? "Paid" : "Pending"}
-                  </Badge>
+                  {p.paid ? (
+                    <Badge className="bg-success-container text-on-success-container text-[10px] flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Paid
+                    </Badge>
+                  ) : (
+                    <button
+                      onClick={() => nudgeParticipant(p)}
+                      className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
+                    >
+                      Nudge
+                    </button>
+                  )}
+                  <span className="text-sm font-medium text-on-surface w-16 text-right">
+                    RM{p.amount.toFixed(2)}
+                  </span>
                 </div>
               </Card>
             </motion.div>
@@ -183,27 +239,28 @@ function DashboardContent() {
         </AnimatePresence>
       </div>
 
-      {/* Share buttons */}
-      <div className="space-y-2">
-        <Button onClick={shareWhatsApp} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Share2 className="w-4 h-4 mr-2" />
-          Share via WhatsApp
+      {/* Quick actions */}
+      <div className="flex gap-2 mb-6">
+        <Button onClick={remindAll} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
+          Remind All
         </Button>
-        <Button onClick={copyPublicLink} variant="outline" className="w-full h-11 rounded-xl">
-          <Copy className="w-4 h-4 mr-2" />
-          Copy Public Link
+        <Button onClick={shareWhatsApp} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
+          <Share2 className="w-4 h-4 mr-1" /> Share
+        </Button>
+        <Button onClick={copyPublicLink} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
+          <Copy className="w-4 h-4 mr-1" /> Copy Link
         </Button>
       </div>
 
       <ConfettiBurst trigger={allPaid} />
       {allPaid && (
-        <div className="mt-6 text-center">
-          <p className="text-lg font-bold text-emerald-400">All collected!</p>
-          <p className="text-xs text-muted-foreground mt-1">Everyone has paid. Bil settle!</p>
+        <div className="mt-4 text-center">
+          <p className="text-lg font-bold text-success">All collected!</p>
+          <p className="text-xs text-on-surface-variant mt-1">Everyone has paid. Bil settle!</p>
         </div>
       )}
 
-      <p className="text-center text-[10px] text-muted-foreground mt-6">
+      <p className="text-center text-[10px] text-on-surface-variant mt-6 pb-safe">
         Bookmark this page — it's the only way to access this dashboard.
       </p>
     </div>
