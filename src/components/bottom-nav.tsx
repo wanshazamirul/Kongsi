@@ -30,7 +30,7 @@ export function BottomNav() {
               <div key="scan" className="flex-1 flex justify-center relative">
                 <button
                   onClick={() => router.push("/app/scan?mode=camera")}
-                  className="absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 rounded-2xl bg-primary hover:opacity-90 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-95"
+                  className="absolute -top-8 left-1/2 -translate-x-1/2 w-14 h-14 rounded-2xl bg-primary hover:opacity-90 text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20 transition-all active:scale-90"
                 >
                   <ScanLine className="w-7 h-7" />
                 </button>

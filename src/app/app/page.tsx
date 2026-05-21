@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Receipt, Plus } from "lucide-react";
 import { formatRM } from "@/lib/utils";
+import { TopBar } from "@/components/top-bar";
 
 interface SavedBill {
   id: string;
@@ -28,7 +29,8 @@ export default function AppHomePage() {
   const progressPercent = bills.length > 0 ? Math.round((bills.length / Math.max(bills.length + 2, 1)) * 100) : 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-5 pt-6 pb-24 flex flex-col gap-8">
+    <div className="max-w-3xl mx-auto px-5 pt-16 pb-24 flex flex-col gap-8">
+      <TopBar />
       {/* Total Collected Bento Card */}
       <section className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
         {/* Decorative background blob */}

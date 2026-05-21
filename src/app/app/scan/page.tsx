@@ -154,6 +154,30 @@ function ScanPageContent() {
   const total = items.reduce((s, i) => s + i.amount, 0);
   const validParticipants = participants.filter((p) => p.name.trim());
 
+  // Scanning progress — full screen
+  if (scanning) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-surface px-5">
+        <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center animate-pulse">
+          <Receipt className="w-12 h-12 text-primary" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-on-surface mb-2">Scanning receipt...</h2>
+          <p className="text-sm text-on-surface-variant">AI is reading your receipt. This takes a few seconds.</p>
+        </div>
+        <div className="w-48 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full animate-[scan_2s_ease-in-out_infinite]" style={{ width: "60%" }} />
+        </div>
+        <style>{`
+          @keyframes scan {
+            0%, 100% { width: 10%; margin-left: 0%; }
+            50% { width: 60%; margin-left: 40%; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   // Choose input screen
   if (!image) {
     return (
@@ -166,17 +190,10 @@ function ScanPageContent() {
         </header>
 
         <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pb-24">
-          {scanning ? (
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <p className="text-sm text-on-surface-variant">Reading receipt...</p>
-            </div>
-          ) : (
-            <>
-              <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
-                <Receipt className="w-12 h-12 text-primary/60" />
-              </div>
-              <h2 className="text-xl font-bold text-on-surface">Add a receipt</h2>
+          <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
+            <Receipt className="w-12 h-12 text-primary/60" />
+          </div>
+          <h2 className="text-xl font-bold text-on-surface">Add a receipt</h2>
               <p className="text-sm text-on-surface-variant text-center max-w-xs">
                 Take a photo or upload from your gallery. AI will read the items automatically.
               </p>
@@ -202,8 +219,6 @@ function ScanPageContent() {
                   </button>
                 </div>
               </div>
-            </>
-          )}
         </main>
 
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFile(e, true)} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
