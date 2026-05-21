@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Receipt, Lock } from "lucide-react";
+import { Loader2, Receipt, Lock, UserPlus } from "lucide-react";
+import { getDeviceId } from "@/lib/device-id";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ConfettiBurst } from "@/components/confetti-burst";
@@ -33,6 +34,10 @@ export default function PublicBillPage() {
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [showAllPaid, setShowAllPaid] = useState(false);
+  const [paid, setPaid] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollName, setEnrollName] = useState("");
+  const [enrolled, setEnrolled] = useState(false);
 
   useEffect(() => { loadBill(); }, [id]);
 
@@ -60,6 +65,24 @@ export default function PublicBillPage() {
       toast.error(err.error || "Failed to confirm");
     }
     setPayingId(null);
+  }
+
+  async function enrollUser() {
+    if (!enrollName.trim()) return;
+    setEnrolling(true);
+    try {
+      const deviceId = getDeviceId();
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device_id: deviceId, name: enrollName.trim() }),
+      });
+      toast.success("You're enrolled! Next time we'll know it's you.");
+      setEnrolled(true);
+    } catch {
+      toast.error("Couldn't enroll. But you're all paid up!");
+    }
+    setEnrolling(false);
   }
 
   if (loading) {
@@ -174,6 +197,32 @@ export default function PublicBillPage() {
                   <Lock className="w-3 h-3" />
                   Once confirmed, {organizerName} will be notified instantly.
                 </p>
+
+                {/* Enrollment — shown after payment */}
+                {paid && !enrolled && (
+                  <div className="mt-6 pt-6 border-t border-outline-variant">
+                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3 text-center">
+                      Want to save your info for next time?
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        value={enrollName}
+                        onChange={(e) => setEnrollName(e.target.value)}
+                        placeholder="Your name"
+                        className="flex-1 h-10 bg-surface-container-lowest border border-outline-variant rounded-xl px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        onKeyDown={(e) => e.key === "Enter" && enrollUser()}
+                      />
+                      <button
+                        onClick={enrollUser}
+                        disabled={enrolling || !enrollName.trim()}
+                        className="h-10 px-4 bg-primary text-primary-foreground rounded-xl text-sm font-semibold flex items-center gap-1 disabled:opacity-50 active:scale-95 transition-all"
+                      >
+                        {enrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4" /> Enroll</>}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-on-surface-variant text-center mt-2">No password. Just your name. Tied to this device.</p>
+                  </div>
+                )}
               </>
             )}
             {allPaid && (
