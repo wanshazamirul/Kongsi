@@ -100,7 +100,7 @@ export default function ProfilePage() {
     <div className="min-h-screen pb-24">
       <TopBar />
 
-      <main className="pt-16 px-5 max-w-2xl mx-auto flex flex-col gap-6">
+      <main className="px-5 max-w-2xl mx-auto flex flex-col gap-6">
         {/* Profile Header */}
         <section className="flex flex-col items-center gap-4 mt-4">
           <div className="relative">

@@ -30,7 +30,7 @@ export default function BillsPage() {
     return (
       <div className="min-h-screen pb-24">
         <TopBar />
-        <main className="pt-16 px-5 max-w-3xl mx-auto">
+        <main className="px-5 max-w-3xl mx-auto">
           <div className="flex justify-between items-end mb-4">
             <h2 className="text-2xl font-bold text-on-surface tracking-tight">Bills</h2>
             <Button onClick={() => router.push("/app/create")} className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-1 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-95">
@@ -56,7 +56,7 @@ export default function BillsPage() {
       {/* Top App Bar */}
       <TopBar />
 
-      <main className="pt-24 px-5 max-w-3xl mx-auto">
+      <main className="px-5 max-w-3xl mx-auto">
         <div className="flex justify-between items-end mb-4">
           <h2 className="text-2xl font-bold text-on-surface tracking-tight">Bills</h2>
           <Button onClick={() => router.push("/app/create")} className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-1 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-95">

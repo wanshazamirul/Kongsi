@@ -46,7 +46,7 @@ export default function FriendsPage() {
     <div className="min-h-screen pb-24">
       <TopBar />
 
-      <main className="pt-14 px-5 max-w-3xl mx-auto flex flex-col gap-6">
+      <main className="px-5 max-w-3xl mx-auto flex flex-col gap-6">
         {/* Search */}
         <div className="relative flex items-center mt-1">
           <Search className="absolute left-4 w-5 h-5 text-outline" />

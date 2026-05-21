@@ -110,7 +110,7 @@ function DashboardContent() {
     <div className="min-h-screen pb-24">
       <TopBar />
 
-      <main className="max-w-2xl mx-auto px-5 pt-16 pb-8 flex flex-col gap-8">
+      <main className="max-w-2xl mx-auto px-5 pb-8 flex flex-col gap-8">
         {/* Title */}
         <section className="flex flex-col gap-3">
           <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>

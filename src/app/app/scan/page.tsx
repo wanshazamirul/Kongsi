@@ -30,7 +30,11 @@ function ScanPageContent() {
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
-  const [participants, setParticipants] = useState<Participant[]>([{ name: "You" }, { name: "" }]);
+  const [participants, setParticipants] = useState<Participant[]>(() => {
+    const contacts: { name: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+    const names = contacts.slice(0, 5).map((c: { name: string }) => ({ name: c.name }));
+    return [{ name: "You" }, ...names];
+  });
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
 
@@ -185,7 +189,7 @@ function ScanPageContent() {
       <div className="min-h-screen flex flex-col bg-surface">
         <TopBar title="Upload Receipt" showBack onBack={() => router.push("/app")} />
 
-        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pt-16 pb-24">
+        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pb-24">
           <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
             <Receipt className="w-12 h-12 text-primary/60" />
           </div>
@@ -228,7 +232,7 @@ function ScanPageContent() {
     <div className="text-on-surface antialiased pb-32">
       <TopBar title="Split Items" showBack onBack={() => { setImage(null); setItems([]); }} />
 
-      <main className="pt-16 px-5 flex flex-col gap-6">
+      <main className="px-5 flex flex-col gap-6">
         <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">

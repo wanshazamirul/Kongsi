@@ -28,9 +28,10 @@ export default function AppHomePage() {
   const totalOutstanding = bills.reduce((sum, b) => sum + b.total_amount, 0);
 
   return (
-    <div className="max-w-3xl mx-auto px-5 pt-16 pb-24 flex flex-col gap-8">
+    <div className="min-h-screen pb-24">
       <TopBar />
-      {/* Total Collected Bento Card */}
+      <div className="max-w-3xl mx-auto px-5 flex flex-col gap-8">
+      {/* Total Outstanding Bento Card */}
       <section className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
         {/* Decorative background blob */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
@@ -132,6 +133,7 @@ export default function AppHomePage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }

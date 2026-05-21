@@ -29,10 +29,13 @@ export default function CreateBillPage() {
   const [description, setDescription] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
 
-  const [participants, setParticipants] = useState<Participant[]>([
-    { name: "You", amount: "" },
-    { name: "", amount: "" },
-  ]);
+  const [participants, setParticipants] = useState<Participant[]>(() => {
+    try {
+      const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      const names = contacts.slice(0, 10).map((c: { name: string }) => ({ name: c.name, amount: "" }));
+      return [{ name: "You", amount: "" }, ...names];
+    } catch { return [{ name: "You", amount: "" }]; }
+  });
   const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal");
   const [searchQuery, setSearchQuery] = useState("");
   const [recentContacts] = useState<SavedContact[]>(() => {
@@ -129,7 +132,7 @@ export default function CreateBillPage() {
     <div className="min-h-screen flex flex-col bg-surface">
       <TopBar showBack onBack={() => (step === 0 ? router.push("/app") : setStep(step - 1))} />
 
-      <main className="flex-grow flex flex-col px-5 pt-16 pb-8 max-w-lg mx-auto w-full">
+      <main className="flex-grow flex flex-col px-5 pb-8 max-w-lg mx-auto w-full">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-1">
