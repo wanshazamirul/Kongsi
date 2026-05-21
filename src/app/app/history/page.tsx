@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Receipt, ShoppingCart } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
+import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { formatRM } from "@/lib/utils";
 
@@ -28,14 +29,8 @@ export default function BillsPage() {
   if (bills.length === 0) {
     return (
       <div className="min-h-screen pb-24">
-        <header className="fixed top-0 w-full z-50 bg-surface shadow-sm flex justify-between items-center h-16 px-5">
-          <button onClick={() => router.push("/app")} className="text-primary hover:opacity-80 active:scale-95">
-            <span className="text-2xl">💳</span>
-          </button>
-          <h1 className="text-lg font-bold text-primary">Kongsi</h1>
-          <div className="w-10" />
-        </header>
-        <main className="pt-24 px-5 max-w-3xl mx-auto">
+        <TopBar />
+        <main className="pt-16 px-5 max-w-3xl mx-auto">
           <div className="flex justify-between items-end mb-4">
             <h2 className="text-2xl font-bold text-on-surface tracking-tight">Bills</h2>
             <Button onClick={() => router.push("/app/create")} className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-1 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-95">
@@ -59,13 +54,7 @@ export default function BillsPage() {
   return (
     <div className="min-h-screen pb-24">
       {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-surface shadow-sm flex justify-between items-center h-16 px-5">
-        <button onClick={() => router.push("/app")} className="text-primary hover:opacity-80 active:scale-95">
-          <span className="text-2xl">💳</span>
-        </button>
-        <h1 className="text-lg font-bold text-primary">Kongsi</h1>
-        <div className="w-10" />
-      </header>
+      <TopBar />
 
       <main className="pt-24 px-5 max-w-3xl mx-auto">
         <div className="flex justify-between items-end mb-4">

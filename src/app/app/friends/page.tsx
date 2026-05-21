@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, UserPlus, Send, User } from "lucide-react";
+import { Search, UserPlus, User } from "lucide-react";
+import { TopBar } from "@/components/top-bar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -46,14 +47,7 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-surface shadow-sm flex justify-between items-center h-16 px-5">
-        <button onClick={() => router.push("/app")} className="text-primary hover:opacity-80 active:scale-95 p-2 -ml-2">
-          <User className="w-5 h-5" />
-        </button>
-        <h1 className="text-lg font-bold text-primary">Kongsi</h1>
-        <div className="w-10" />
-      </header>
+      <TopBar />
 
       <main className="pt-20 px-5 max-w-3xl mx-auto flex flex-col gap-6">
         {/* Search */}

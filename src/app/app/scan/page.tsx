@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { base64ToWebP } from "@/lib/image-utils";
 
 interface ScannedItem {
   name: string;
@@ -43,36 +44,15 @@ function ScanPageContent() {
     }
   }, []);
 
-  async function compressImage(base64: string, maxDim = 1200, quality = 0.7): Promise<string> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          const ratio = Math.min(maxDim / width, maxDim / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.src = base64;
-    });
-  }
-
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>, fromCamera: boolean) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async () => {
       const raw = reader.result as string;
-      const compressed = await compressImage(raw);
-      setImage(compressed);
-      scanReceipt(compressed);
+      const webp = await base64ToWebP(raw);
+      setImage(webp);
+      scanReceipt(webp);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
