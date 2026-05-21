@@ -39,4 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-.env.local
+# ai instruction files
+CLAUDE.md
+AGENTS.md
+
+# pocketbase data
+/pb_data/
