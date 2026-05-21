@@ -24,9 +24,8 @@ export default function AppHomePage() {
     } catch {}
   }, []);
 
-  const totalCollected = 1240.00;
-  const progressPercent = 75;
-  const weeklyIncrease = 320;
+  const totalCollected = bills.reduce((sum, b) => sum + b.total_amount, 0);
+  const progressPercent = bills.length > 0 ? Math.round((bills.length / Math.max(bills.length + 2, 1)) * 100) : 0;
 
   return (
     <div className="max-w-3xl mx-auto px-5 pt-6 pb-24 flex flex-col gap-8">
@@ -37,12 +36,13 @@ export default function AppHomePage() {
         <div className="flex flex-col gap-3 z-10 w-full md:w-auto text-center md:text-left">
           <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Collected</h2>
           <p className="text-5xl font-bold text-primary tracking-[-0.02em]">RM{totalCollected.toFixed(2)}</p>
-          <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
-            <span className="inline-flex items-center gap-1 bg-success-container/20 text-on-success-container px-2 py-1 rounded-full text-xs font-semibold">
-              <span className="material-symbols-outlined text-[16px]">trending_up</span>
-              +RM{weeklyIncrease} this week
-            </span>
-          </div>
+          {bills.length > 0 && (
+            <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
+              <span className="inline-flex items-center gap-1 bg-success-container/20 text-on-success-container px-2 py-1 rounded-full text-xs font-semibold">
+                ↑ {bills.length} active {bills.length === 1 ? "bill" : "bills"}
+              </span>
+            </div>
+          )}
         </div>
         {/* Progress Ring */}
         <div className="relative w-32 h-32 flex-shrink-0 z-10 mx-auto md:mx-0">

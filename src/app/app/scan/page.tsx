@@ -28,12 +28,17 @@ export default function ScanPage() {
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
 
+  // Auto-open camera on mount
   useEffect(() => {
     const stored = sessionStorage.getItem("kongsi_scan_image");
     if (stored) {
       sessionStorage.removeItem("kongsi_scan_image");
       setImage(stored);
       scanReceipt(stored);
+    } else {
+      // Open camera immediately
+      const timer = setTimeout(() => fileInputRef.current?.click(), 300);
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -145,76 +150,29 @@ export default function ScanPage() {
   const total = items.reduce((s, i) => s + i.amount, 0);
   const validParticipants = participants.filter((p) => p.name.trim());
 
-  // Camera viewfinder
+  // Waiting for camera
   if (!image) {
     return (
-      <div className="bg-black text-white h-screen w-full overflow-hidden antialiased">
-        <main className="relative h-full w-full flex flex-col items-center justify-center">
-          {/* Simulated camera feed */}
-          <div className="absolute inset-0 w-full h-full bg-[#1a1a2e]" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-surface">
+        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Camera className="w-10 h-10 text-primary animate-pulse" />
+        </div>
+        <p className="text-sm text-on-surface-variant">Opening camera...</p>
+        <Button variant="outline" className="rounded-xl" onClick={() => router.push("/app/create")}>
+          <Receipt className="w-4 h-4 mr-2" />
+          Enter manually instead
+        </Button>
+        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+      </div>
+    );
+  }
 
-          {/* Top Actions */}
-          <header className="absolute top-0 left-0 w-full flex justify-between items-center px-5 pt-12 pb-4 z-20">
-            <button onClick={() => router.push("/app")} className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full backdrop-blur-md text-white hover:bg-white/20 transition-colors active:scale-95">
-              <span className="text-xl">✕</span>
-            </button>
-            <button className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full backdrop-blur-md text-white hover:bg-white/20 transition-colors active:scale-95">
-              <span className="text-xl">⚡</span>
-            </button>
-          </header>
-
-          {/* Viewfinder Reticle */}
-          <div className="relative w-[85%] aspect-[1/1.6] max-h-[574px] flex flex-col items-center justify-center z-20">
-            <div className="absolute inset-0 w-full h-full">
-              {/* Glowing Corners */}
-              <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-xl shadow-[0_0_20px_rgba(70,72,212,0.6)]" />
-              <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-xl shadow-[0_0_20px_rgba(70,72,212,0.6)]" />
-              <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-xl shadow-[0_0_20px_rgba(70,72,212,0.6)]" />
-              <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-xl shadow-[0_0_20px_rgba(70,72,212,0.6)]" />
-              {/* Animated Scan Line */}
-              <div className="absolute left-0 w-full h-[2px] bg-primary shadow-[0_0_15px_rgba(70,72,212,1)] animate-scan z-30" />
-              <div className="absolute inset-2 border border-white/10 rounded-lg" />
-            </div>
-            {/* Instruction */}
-            <div className="absolute -bottom-16 w-full text-center">
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-sm text-white border border-white/10 shadow-lg">
-                ⊕ Align receipt within the frame
-              </span>
-            </div>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="absolute bottom-0 w-full pb-10 pt-16 px-5 flex justify-between items-center z-20 bg-gradient-to-t from-black via-black/80 to-transparent">
-            <button onClick={() => router.push("/app/create")} className="flex flex-col items-center gap-1 text-white/70 hover:text-white transition-colors group active:scale-95 w-20">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm group-hover:bg-white/20">
-                <span className="text-2xl">🖼</span>
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Upload</span>
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} className="relative w-20 h-20 rounded-full border-[3px] border-white flex items-center justify-center active:scale-90 transition-transform duration-200 group">
-              <div className="absolute inset-1 bg-white rounded-full group-active:bg-surface-variant transition-colors duration-200" />
-            </button>
-            <button onClick={() => router.push("/app/create")} className="flex flex-col items-center gap-1 text-white/70 hover:text-white transition-colors group active:scale-95 w-20">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm group-hover:bg-white/20">
-                <span className="text-2xl">✏️</span>
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Manual</span>
-            </button>
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
-        </main>
-        <style>{`
-          @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-          }
-          .animate-scan {
-            animation: scan 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            position: absolute;
-          }
-        `}</style>
+  // Scanning
+  if (scanning) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-surface">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm text-on-surface-variant">Reading receipt...</p>
       </div>
     );
   }
@@ -268,9 +226,7 @@ export default function ScanPage() {
           {items.map((item, i) => (
             <div key={i} className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant">
               <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h4 className="text-sm font-semibold text-on-surface">{item.name}</h4>
-                </div>
+                <h4 className="text-sm font-semibold text-on-surface">{item.name}</h4>
                 <span className="text-sm font-semibold text-on-surface">RM{item.amount.toFixed(2)}</span>
               </div>
               <div className="flex gap-2">
@@ -302,11 +258,7 @@ export default function ScanPage() {
         {/* Title & Participants */}
         <div>
           <Label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 block">Bill Title</Label>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="bg-surface-container-lowest border-outline-variant rounded-xl"
-          />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface-container-lowest border-outline-variant rounded-xl" />
         </div>
 
         <div className="space-y-3">
@@ -331,7 +283,7 @@ export default function ScanPage() {
         </div>
       </main>
 
-      {/* Contextual Footer */}
+      {/* Footer */}
       <div className="fixed bottom-0 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 pb-8 z-50">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -345,17 +297,8 @@ export default function ScanPage() {
             <p className="text-sm font-semibold text-success">RM0.00</p>
           </div>
         </div>
-        <Button
-          onClick={createBill}
-          disabled={creating}
-          className="w-full bg-primary text-primary-foreground h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all"
-        >
-          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-            <>
-              <span>Confirm Splitting</span>
-              <span>→</span>
-            </>
-          )}
+        <Button onClick={createBill} disabled={creating} className="w-full bg-primary text-primary-foreground h-12 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Confirm Splitting</span><span>→</span></>}
         </Button>
       </div>
     </div>
