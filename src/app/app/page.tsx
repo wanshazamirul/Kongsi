@@ -29,7 +29,7 @@ export default function LandingPage() {
   return (
     <div className="max-w-lg mx-auto">
       {/* Header */}
-      <header className="px-4 pt-6 pb-2 flex items-center justify-between">
+      <header className="px-4 pt-6 pb-2">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center">
             <Receipt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -39,14 +39,6 @@ export default function LandingPage() {
             <p className="text-[10px] text-muted-foreground leading-tight">Split. Share. Settled.</p>
           </div>
         </div>
-        <Button
-          size="sm"
-          className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-sm"
-          onClick={() => router.push("/app/create")}
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          New Bill
-        </Button>
       </header>
 
       {/* Content */}
