@@ -183,7 +183,7 @@ function ScanPageContent() {
   if (!image) {
     return (
       <div className="min-h-screen flex flex-col bg-surface">
-        <TopBar title="Upload Receipt" showBack backTo="/app" />
+        <TopBar title="Upload Receipt" showBack onBack={() => router.push("/app")} />
 
         <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pt-16 pb-24">
           <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
@@ -319,7 +319,7 @@ function ScanPageContent() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 pb-8 z-50">
+      <div className="fixed bottom-16 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase">YOUR TOTAL</p>

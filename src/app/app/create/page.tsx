@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Search, UserPlus, Loader2, Check } from "lucide-react";
+import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,18 +127,9 @@ export default function CreateBillPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
-      {/* Top App Bar */}
-      <header className="flex justify-between items-center w-full px-5 h-12 bg-surface">
-        <button onClick={() => (step === 0 ? router.push("/app") : setStep(step - 1))} className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-low transition-colors">
-          <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
-        </button>
-        <div className="text-lg font-bold text-primary">Kongsi</div>
-        <button onClick={() => router.push("/app")} className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-low transition-colors">
-          <span className="text-on-surface-variant text-lg">✕</span>
-        </button>
-      </header>
+      <TopBar showBack onBack={() => (step === 0 ? router.push("/app") : setStep(step - 1))} />
 
-      <main className="flex-grow flex flex-col px-5 pt-6 pb-8 max-w-lg mx-auto w-full">
+      <main className="flex-grow flex flex-col px-5 pt-16 pb-8 max-w-lg mx-auto w-full">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-1">

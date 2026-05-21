@@ -25,8 +25,7 @@ export default function AppHomePage() {
     } catch {}
   }, []);
 
-  const totalCollected = bills.reduce((sum, b) => sum + b.total_amount, 0);
-  const progressPercent = bills.length > 0 ? Math.round((bills.length / Math.max(bills.length + 2, 1)) * 100) : 0;
+  const totalOutstanding = bills.reduce((sum, b) => sum + b.total_amount, 0);
 
   return (
     <div className="max-w-3xl mx-auto px-5 pt-16 pb-24 flex flex-col gap-8">
@@ -36,8 +35,8 @@ export default function AppHomePage() {
         {/* Decorative background blob */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
         <div className="flex flex-col gap-3 z-10 w-full md:w-auto text-center md:text-left">
-          <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Collected</h2>
-          <p className="text-5xl font-bold text-primary tracking-[-0.02em]">RM{totalCollected.toFixed(2)}</p>
+          <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Outstanding</h2>
+          <p className="text-5xl font-bold text-primary tracking-[-0.02em]">RM{totalOutstanding.toFixed(2)}</p>
           {bills.length > 0 && (
             <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
               <span className="inline-flex items-center gap-1 bg-success-container/20 text-on-success-container px-2 py-1 rounded-full text-xs font-semibold">
@@ -46,15 +45,15 @@ export default function AppHomePage() {
             </div>
           )}
         </div>
-        {/* Progress Ring */}
+        {/* Bill count ring */}
         <div className="relative w-32 h-32 flex-shrink-0 z-10 mx-auto md:mx-0">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
             <circle className="text-surface-container-high" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeWidth="8" />
-            <circle className="text-primary transition-all duration-1000 ease-out" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeDasharray="251.2" strokeDashoffset="62.8" strokeWidth="8" />
+            <circle className="text-primary" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeDasharray="251.2" strokeDashoffset={bills.length === 0 ? 251.2 : Math.max(251.2 - (bills.length / Math.max(bills.length + 1, 1)) * 251.2, 0)} strokeWidth="8" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-semibold text-on-surface">{progressPercent}%</span>
-            <span className="text-[10px] font-semibold text-on-surface-variant uppercase">Recovered</span>
+            <span className="text-xl font-semibold text-on-surface">{bills.length}</span>
+            <span className="text-[10px] font-semibold text-on-surface-variant uppercase">{bills.length === 1 ? "Bill" : "Bills"}</span>
           </div>
         </div>
       </section>
