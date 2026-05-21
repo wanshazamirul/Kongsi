@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Camera, Loader2, ArrowLeft, Receipt, X, Check } from "lucide-react";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Camera, Loader2, ArrowLeft, Receipt, X, Check, Upload, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +17,13 @@ interface Participant {
   name: string;
 }
 
-export default function ScanPage() {
+function ScanPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openCamera = searchParams.get("mode") === "camera";
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
@@ -28,21 +32,18 @@ export default function ScanPage() {
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
 
-  // Auto-open camera on mount
   useEffect(() => {
     const stored = sessionStorage.getItem("kongsi_scan_image");
     if (stored) {
       sessionStorage.removeItem("kongsi_scan_image");
       setImage(stored);
       scanReceipt(stored);
-    } else {
-      // Open camera immediately
-      const timer = setTimeout(() => fileInputRef.current?.click(), 300);
-      return () => clearTimeout(timer);
+    } else if (openCamera) {
+      setTimeout(() => cameraInputRef.current?.click(), 300);
     }
   }, []);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>, fromCamera: boolean) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -52,6 +53,7 @@ export default function ScanPage() {
       scanReceipt(base64);
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
   }
 
   async function scanReceipt(base64: string) {
@@ -150,29 +152,60 @@ export default function ScanPage() {
   const total = items.reduce((s, i) => s + i.amount, 0);
   const validParticipants = participants.filter((p) => p.name.trim());
 
-  // Waiting for camera
+  // Choose input screen
   if (!image) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-surface">
-        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Camera className="w-10 h-10 text-primary animate-pulse" />
-        </div>
-        <p className="text-sm text-on-surface-variant">Opening camera...</p>
-        <Button variant="outline" className="rounded-xl" onClick={() => router.push("/app/create")}>
-          <Receipt className="w-4 h-4 mr-2" />
-          Enter manually instead
-        </Button>
-        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
-      </div>
-    );
-  }
+      <div className="min-h-screen flex flex-col bg-surface">
+        <header className="flex items-center gap-3 px-5 h-16">
+          <button onClick={() => router.push("/app")} className="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
+          </button>
+          <h1 className="text-lg font-bold text-on-surface">Upload Receipt</h1>
+        </header>
 
-  // Scanning
-  if (scanning) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-surface">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-on-surface-variant">Reading receipt...</p>
+        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pb-24">
+          {scanning ? (
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="text-sm text-on-surface-variant">Reading receipt...</p>
+            </div>
+          ) : (
+            <>
+              <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
+                <Receipt className="w-12 h-12 text-primary/60" />
+              </div>
+              <h2 className="text-xl font-bold text-on-surface">Add a receipt</h2>
+              <p className="text-sm text-on-surface-variant text-center max-w-xs">
+                Take a photo or upload from your gallery. AI will read the items automatically.
+              </p>
+              <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
+                <Button
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-[0px_4px_12px_rgba(70,72,212,0.3)]"
+                >
+                  <Camera className="w-5 h-5" />
+                  Take Photo
+                </Button>
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  className="w-full h-12 rounded-xl border-outline-variant text-on-surface font-semibold flex items-center justify-center gap-2"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                  Upload from Gallery
+                </Button>
+                <div className="text-center mt-2">
+                  <button onClick={() => router.push("/app/create")} className="text-xs text-primary font-semibold hover:underline">
+                    Enter manually instead
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </main>
+
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFile(e, true)} className="hidden" />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFile(e, false)} className="hidden" />
       </div>
     );
   }
@@ -189,7 +222,6 @@ export default function ScanPage() {
       </header>
 
       <main className="pt-24 px-5 flex flex-col gap-6">
-        {/* Receipt Header */}
         <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
@@ -206,7 +238,6 @@ export default function ScanPage() {
           </div>
         </section>
 
-        {/* Participants Legend */}
         <section className="flex gap-3 overflow-x-auto pb-1">
           {validParticipants.map((p, i) => (
             <div key={i} className="flex flex-col items-center gap-1 shrink-0">
@@ -220,7 +251,6 @@ export default function ScanPage() {
           ))}
         </section>
 
-        {/* Itemized List */}
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1">TAP AVATARS TO ASSIGN</h3>
           {items.map((item, i) => (
@@ -255,7 +285,6 @@ export default function ScanPage() {
           ))}
         </section>
 
-        {/* Title & Participants */}
         <div>
           <Label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2 block">Bill Title</Label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} className="bg-surface-container-lowest border-outline-variant rounded-xl" />
@@ -283,7 +312,6 @@ export default function ScanPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <div className="fixed bottom-0 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 pb-8 z-50">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -302,5 +330,13 @@ export default function ScanPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+      <ScanPageContent />
+    </Suspense>
   );
 }
