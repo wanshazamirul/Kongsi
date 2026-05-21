@@ -42,7 +42,7 @@ export function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 active:scale-90 transition-all ${
                 isActive(tab.href)
                   ? "text-primary"
                   : "text-on-surface-variant hover:text-on-surface"

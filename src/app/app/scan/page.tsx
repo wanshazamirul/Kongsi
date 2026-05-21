@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, Loader2, ArrowLeft, Receipt, X, Check, Upload, ImageIcon } from "lucide-react";
+import { Camera, Loader2, Receipt, X, Check, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { base64ToWebP } from "@/lib/image-utils";
+import { TopBar } from "@/components/top-bar";
 
 interface ScannedItem {
   name: string;
@@ -182,14 +183,9 @@ function ScanPageContent() {
   if (!image) {
     return (
       <div className="min-h-screen flex flex-col bg-surface">
-        <header className="flex items-center gap-3 px-5 h-16">
-          <button onClick={() => router.push("/app")} className="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
-            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
-          </button>
-          <h1 className="text-lg font-bold text-on-surface">Upload Receipt</h1>
-        </header>
+        <TopBar title="Upload Receipt" showBack backTo="/app" />
 
-        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pb-24">
+        <main className="flex-1 flex flex-col items-center justify-center gap-6 px-5 pt-16 pb-24">
           <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center mb-2">
             <Receipt className="w-12 h-12 text-primary/60" />
           </div>
@@ -230,15 +226,9 @@ function ScanPageContent() {
   // Split Items view
   return (
     <div className="text-on-surface antialiased pb-32">
-      <header className="fixed top-0 w-full z-50 bg-surface shadow-sm h-16 px-5 flex justify-between items-center">
-        <button onClick={() => { setImage(null); setItems([]); }} className="w-10 h-10 flex items-center justify-center text-primary active:scale-95 transition-transform">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-lg font-bold text-on-surface">Split Items</h1>
-        <div className="w-10" />
-      </header>
+      <TopBar title="Split Items" showBack onBack={() => { setImage(null); setItems([]); }} />
 
-      <main className="pt-24 px-5 flex flex-col gap-6">
+      <main className="pt-16 px-5 flex flex-col gap-6">
         <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
