@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Share2, CheckCircle2, Clock, Coffee, Loader2 } from "lucide-react";
+import { Share2, CheckCircle2, Clock, Coffee, Loader2, Printer } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PaidStamp } from "@/components/paid-stamp";
+import { ProgressKopi } from "@/components/progress-kopi";
+import { ConfettiBurst } from "@/components/confetti-burst";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
 
@@ -128,62 +131,63 @@ export default function PublicBillPage() {
 
       {/* Progress */}
       <Card className="p-4 mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Progress</span>
-          <span className="text-sm text-muted-foreground">
-            {paidCount}/{bill.participants.length} paid · {formatRM(totalPaid)}
-          </span>
-        </div>
-        <div className="h-3 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-700 ${allPaid ? "bg-green-500" : "bg-amber-500"}`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <ProgressKopi
+          progress={progress}
+          label="Collection Progress"
+          sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
+        />
       </Card>
 
       {/* Participants */}
       <div className="space-y-2 mb-6">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Participants</h2>
-        {bill.participants.map((p) => (
-          <Card
-            key={p.id}
-            className={`p-3 flex items-center justify-between transition-all ${p.paid ? "opacity-60" : ""}`}
-          >
-            <div className="flex items-center gap-3">
-              {p.paid ? (
-                <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-              ) : (
-                <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0" />
-              )}
-              <div>
-                <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>
-                  {p.name}
-                </p>
-                {p.paid && p.paid_at && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Paid {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{formatRM(p.amount)}</span>
-              {!p.paid && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs rounded-lg border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                  onClick={() => setSelectedParticipant(p.id)}
-                  disabled={payingId === p.id}
-                >
-                  {payingId === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Pay"}
-                </Button>
-              )}
-            </div>
-          </Card>
-        ))}
+        <AnimatePresence>
+          {bill.participants.map((p) => (
+            <motion.div
+              key={p.id}
+              initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Card className={`p-3 flex items-center justify-between transition-all relative overflow-hidden ${p.paid ? "opacity-70 border-green-500/20" : ""}`}>
+                {p.paid && <PaidStamp />}
+                <div className="flex items-center gap-3">
+                  {p.paid ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0" />
+                  )}
+                  <div>
+                    <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>
+                      {p.name}
+                    </p>
+                    {p.paid && p.paid_at && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{formatRM(p.amount)}</span>
+                  {!p.paid && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs rounded-lg border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                      onClick={() => setSelectedParticipant(p.id)}
+                      disabled={payingId === p.id}
+                    >
+                      {payingId === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Pay"}
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
+      <ConfettiBurst trigger={allPaid} />
 
       {/* Share button */}
       <Button onClick={shareBill} className="w-full h-11 rounded-xl" variant="outline">

@@ -3,9 +3,13 @@
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, Share2, Copy, CheckCircle2, Clock, Coffee, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ProgressKopi } from "@/components/progress-kopi";
+import { ConfettiBurst } from "@/components/confetti-burst";
+import { PaidStamp } from "@/components/paid-stamp";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
 
@@ -130,18 +134,11 @@ function DashboardContent() {
 
       {/* Progress */}
       <Card className="p-4 mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Collection Progress</span>
-          <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
-        </div>
-        <div className="h-4 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-700 flex items-center justify-center text-[10px] font-bold ${allPaid ? "bg-green-500" : "bg-amber-500"}`}
-            style={{ width: `${Math.max(progress, 2)}%` }}
-          >
-            {progress > 15 && `${paidCount}/${bill.participants.length}`}
-          </div>
-        </div>
+        <ProgressKopi
+          progress={progress}
+          label="Collection Progress"
+          sublabel={`${paidCount}/${bill.participants.length} paid · ${formatRM(totalPaid)}`}
+        />
       </Card>
 
       {/* Participants */}
@@ -149,31 +146,41 @@ function DashboardContent() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           Participants ({paidCount}/{bill.participants.length})
         </h2>
-        {bill.participants.map((p) => (
-          <Card key={p.id} className={`p-3 flex items-center justify-between ${p.paid ? "opacity-60" : ""}`}>
-            <div className="flex items-center gap-3">
-              {p.paid ? (
-                <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-              ) : (
-                <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
-              )}
-              <div>
-                <p className="text-sm font-medium">{p.name}</p>
-                {p.paid && p.paid_at && (
-                  <p className="text-[10px] text-muted-foreground">
-                    {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{formatRM(p.amount)}</span>
-              <Badge variant={p.paid ? "default" : "secondary"} className="text-[10px]">
-                {p.paid ? "Paid" : "Pending"}
-              </Badge>
-            </div>
-          </Card>
-        ))}
+        <AnimatePresence>
+          {bill.participants.map((p) => (
+            <motion.div
+              key={p.id}
+              initial={p.paid ? { scale: 0.9, opacity: 0 } : false}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <Card className={`p-3 flex items-center justify-between relative overflow-hidden ${p.paid ? "opacity-70 border-green-500/20" : ""}`}>
+                {p.paid && <PaidStamp />}
+                <div className="flex items-center gap-3">
+                  {p.paid ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    {p.paid && p.paid_at && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{formatRM(p.amount)}</span>
+                  <Badge variant={p.paid ? "default" : "secondary"} className="text-[10px]">
+                    {p.paid ? "Paid" : "Pending"}
+                  </Badge>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Share buttons */}
@@ -188,6 +195,7 @@ function DashboardContent() {
         </Button>
       </div>
 
+      <ConfettiBurst trigger={allPaid} />
       {allPaid && (
         <div className="mt-6 text-center">
           <p className="text-lg font-bold text-green-400">🎉 All collected!</p>

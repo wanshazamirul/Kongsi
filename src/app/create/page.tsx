@@ -86,6 +86,13 @@ export default function CreateBillPage() {
 
     if (res.ok) {
       const data = await res.json();
+      // Save to local history
+      try {
+        const stored = localStorage.getItem("kongsi_bills");
+        const bills = stored ? JSON.parse(stored) : [];
+        bills.unshift({ id: data.id, title: title.trim(), total_amount: Math.round(total * 100) / 100, created: new Date().toISOString(), admin_token: data.admin_token });
+        localStorage.setItem("kongsi_bills", JSON.stringify(bills.slice(0, 20)));
+      } catch {}
       router.push(
         `/b/${data.id}/dashboard?token=${data.admin_token}&created=true`
       );
