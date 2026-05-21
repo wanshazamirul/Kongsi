@@ -43,14 +43,36 @@ function ScanPageContent() {
     }
   }, []);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>, fromCamera: boolean) {
+  async function compressImage(base64: string, maxDim = 1200, quality = 0.7): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = base64;
+    });
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>, fromCamera: boolean) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setImage(base64);
-      scanReceipt(base64);
+    reader.onload = async () => {
+      const raw = reader.result as string;
+      const compressed = await compressImage(raw);
+      setImage(compressed);
+      scanReceipt(compressed);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -204,8 +226,8 @@ function ScanPageContent() {
           )}
         </main>
 
-        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFile(e, true)} className="hidden" />
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFile(e, false)} className="hidden" />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFile(e, true)} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleFile(e, false)} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
       </div>
     );
   }
