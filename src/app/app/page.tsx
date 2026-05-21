@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Receipt, Plus } from "lucide-react";
 import { formatRM } from "@/lib/utils";
@@ -25,7 +25,20 @@ export default function AppHomePage() {
     } catch {}
   }, []);
 
+  const fileRef = useRef<HTMLInputElement>(null);
   const totalOutstanding = bills.reduce((sum, b) => sum + b.total_amount, 0);
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      sessionStorage.setItem("kongsi_scan_image", reader.result as string);
+      router.push("/app/scan");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
 
   return (
     <div className="min-h-screen pb-24">
@@ -71,7 +84,7 @@ export default function AppHomePage() {
           <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Create New Bill</span>
         </button>
         <button
-          onClick={() => router.push("/app/scan")}
+          onClick={() => fileRef.current?.click()}
           className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
         >
           <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -134,6 +147,7 @@ export default function AppHomePage() {
         </section>
       )}
       </div>
+    <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
     </div>
   );
 }

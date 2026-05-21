@@ -10,6 +10,13 @@ import { toast } from "sonner";
 import { base64ToWebP } from "@/lib/image-utils";
 import { TopBar } from "@/components/top-bar";
 
+const FEE_KEYWORDS = ["tax", "service charge", "sst", "service tax", "gov tax", "gst", "sc", "svc", "fee", "gratuity", "tip"];
+
+function isFeeItem(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return FEE_KEYWORDS.some((k) => lower.includes(k) || lower === k);
+}
+
 interface ScannedItem {
   name: string;
   amount: number;
@@ -17,6 +24,7 @@ interface ScannedItem {
 
 interface Participant {
   name: string;
+  avatar?: string;
 }
 
 function ScanPageContent() {
@@ -31,9 +39,10 @@ function ScanPageContent() {
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
   const [participants, setParticipants] = useState<Participant[]>(() => {
-    const contacts: { name: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-    const names = contacts.slice(0, 5).map((c: { name: string }) => ({ name: c.name }));
-    return [{ name: "You" }, ...names];
+    try {
+      const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      return [{ name: "You" }, ...contacts.slice(0, 5).map((c) => ({ name: c.name, avatar: c.avatar }))];
+    } catch { return [{ name: "You" }]; }
   });
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
@@ -113,11 +122,15 @@ function ScanPageContent() {
     setCreating(true);
 
     const personTotals: Record<number, number> = {};
+    // Initialize all participants to 0
+    validParticipants.forEach((_, pi) => { personTotals[pi] = 0; });
+
     items.forEach((item, itemIndex) => {
       const assignedTo = itemAssignments[itemIndex];
       if (assignedTo !== undefined) {
         personTotals[assignedTo] = (personTotals[assignedTo] || 0) + item.amount;
       } else {
+        // Unassigned items split equally
         const perPerson = item.amount / validParticipants.length;
         validParticipants.forEach((_, pi) => {
           personTotals[pi] = (personTotals[pi] || 0) + perPerson;
@@ -252,10 +265,14 @@ function ScanPageContent() {
         <section className="flex gap-3 overflow-x-auto pb-1">
           {validParticipants.map((p, i) => (
             <div key={i} className="flex flex-col items-center gap-1 shrink-0">
-              <div className={`w-10 h-10 rounded-full border-2 p-0.5 ${i === 0 ? "border-primary" : "border-outline-variant"}`}>
-                <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant">
-                  {p.name[0]?.toUpperCase() || "?"}
-                </div>
+              <div className={`w-10 h-10 rounded-full border-2 p-0.5 overflow-hidden ${i === 0 ? "border-primary" : "border-outline-variant"}`}>
+                {p.avatar ? (
+                  <img src={p.avatar} alt={p.name} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant">
+                    {p.name[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
               </div>
               <span className="text-[10px] font-semibold text-on-surface">{p.name}</span>
             </div>
@@ -264,36 +281,44 @@ function ScanPageContent() {
 
         <section className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1">TAP AVATARS TO ASSIGN</h3>
-          {items.map((item, i) => (
-            <div key={i} className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-outline-variant">
+          {items.map((item, i) => {
+            const isFee = isFeeItem(item.name);
+            return (
+            <div key={i} className={`bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border ${isFee ? "border-success/20 bg-success-container/5" : "border-outline-variant"}`}>
               <div className="flex justify-between items-start mb-3">
-                <h4 className="text-sm font-semibold text-on-surface">{item.name}</h4>
+                <div>
+                  <h4 className="text-sm font-semibold text-on-surface">{item.name}</h4>
+                  {isFee && <p className="text-[10px] text-success font-medium mt-0.5">Auto-split equally</p>}
+                </div>
                 <span className="text-sm font-semibold text-on-surface">RM{item.amount.toFixed(2)}</span>
               </div>
-              <div className="flex gap-2">
-                {validParticipants.map((p, pi) => (
-                  <button
-                    key={pi}
-                    onClick={() => toggleItemAssignment(i, pi)}
-                    className={`w-10 h-10 rounded-full relative active:scale-95 transition-all ${
-                      itemAssignments[i] === pi
-                        ? "ring-2 ring-primary ring-offset-2 ring-offset-surface-container-lowest opacity-100"
-                        : "opacity-50 grayscale hover:opacity-80 hover:grayscale-0"
-                    }`}
-                  >
-                    <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">
-                      {p.name[0]?.toUpperCase() || "?"}
-                    </div>
-                    {itemAssignments[i] === pi && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success text-on-success-container rounded-full flex items-center justify-center border-2 border-surface-container-lowest">
-                        <Check className="w-3 h-3" />
+              {!isFee && (
+                <div className="flex gap-2">
+                  {validParticipants.map((p, pi) => (
+                    <button
+                      key={pi}
+                      onClick={() => toggleItemAssignment(i, pi)}
+                      className={`w-10 h-10 rounded-full relative active:scale-95 transition-all ${
+                        itemAssignments[i] === pi
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-surface-container-lowest opacity-100"
+                          : "opacity-50 grayscale hover:opacity-80 hover:grayscale-0"
+                      }`}
+                    >
+                      <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">
+                        {p.name[0]?.toUpperCase() || "?"}
                       </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+                      {itemAssignments[i] === pi && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success text-on-success-container rounded-full flex items-center justify-center border-2 border-surface-container-lowest">
+                          <Check className="w-3 h-3" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </section>
 
         <div>

@@ -1,41 +1,55 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, UserPlus } from "lucide-react";
+import { Search, UserPlus, Phone, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TopBar } from "@/components/top-bar";
-import { AddFriendModal } from "@/components/add-friend-modal";
+import { AddFriendModal, type Contact } from "@/components/add-friend-modal";
 import { toast } from "sonner";
-
-interface Contact {
-  name: string;
-  avatar?: string;
-}
 
 export default function FriendsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     try { setContacts(JSON.parse(localStorage.getItem("kongsi_contacts") || "[]")); } catch {}
   }, []);
 
-  function addContact(name: string, avatar?: string) {
-    if (contacts.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+  function saveContact(name: string, phone: string, avatar?: string) {
+    const next = [...contacts];
+    const idx = next.findIndex((c) => editingContact && c.name === editingContact.name);
+
+    // Check for duplicates (skip if editing same contact)
+    if (idx === -1 && contacts.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
       toast.error("Contact already exists");
       return;
     }
-    const next = [...contacts, { name, avatar }];
-    setContacts(next);
+
+    if (idx >= 0) {
+      next[idx] = { name, phone: phone || undefined, avatar };
+      setContacts(next);
+      toast.success("Updated!");
+    } else {
+      next.push({ name, phone: phone || undefined, avatar });
+      setContacts(next);
+      toast.success("Added!");
+    }
+
     localStorage.setItem("kongsi_contacts", JSON.stringify(next));
-    toast.success("Added!");
+    setEditingContact(null);
   }
 
   function removeContact(name: string) {
     const next = contacts.filter((c) => c.name !== name);
     setContacts(next);
     localStorage.setItem("kongsi_contacts", JSON.stringify(next));
+  }
+
+  function openEdit(contact: Contact) {
+    setEditingContact(contact);
+    setModalOpen(true);
   }
 
   const filtered = contacts.filter((c) =>
@@ -58,7 +72,7 @@ export default function FriendsPage() {
           />
         </div>
 
-        {/* Recent + New button — always visible */}
+        {/* Recent + New button */}
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-on-surface">
             {contacts.length > 0 ? "Recent" : "Add Friends"}
@@ -77,7 +91,7 @@ export default function FriendsPage() {
               </div>
             ))}
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => { setEditingContact(null); setModalOpen(true); }}
               className="flex flex-col items-center gap-2 min-w-[72px] active:scale-95 transition-transform group"
             >
               <div className="w-16 h-16 rounded-full flex items-center justify-center bg-primary/5 border-2 border-dashed border-primary shadow-[0px_4px_20px_rgba(15,23,42,0.05)] group-hover:bg-primary/10 transition-colors">
@@ -88,7 +102,7 @@ export default function FriendsPage() {
           </div>
         </div>
 
-        {/* All Contacts list — only when there are contacts */}
+        {/* All Contacts */}
         {contacts.length > 0 && (
           <div className="flex flex-col gap-3">
             <div className="flex justify-between items-end">
@@ -100,7 +114,7 @@ export default function FriendsPage() {
               <div className="flex flex-col gap-3">
                 {filtered.map((c) => (
                   <div key={c.name} className="bg-surface-container-lowest rounded-xl p-4 flex items-center justify-between shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-[0.99] transition-all border border-transparent hover:border-outline-variant">
-                    <div className="flex items-center gap-4">
+                    <button onClick={() => openEdit(c)} className="flex items-center gap-4 flex-1 text-left">
                       <div className="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center flex-shrink-0">
                         {c.avatar ? (
                           <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
@@ -108,14 +122,29 @@ export default function FriendsPage() {
                           <span className="text-lg font-bold text-on-surface-variant">{c.name[0].toUpperCase()}</span>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-on-surface">{c.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeContact(c.name)}
-                      className="border border-outline-variant text-on-surface-variant px-4 py-2 rounded-lg text-xs font-semibold active:scale-95 transition-transform hover:bg-error-container/10 hover:border-error hover:text-error"
-                    >
-                      Remove
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-on-surface">{c.name}</span>
+                        {c.phone && (
+                          <span className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" /> {c.phone}
+                          </span>
+                        )}
+                      </div>
                     </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEdit(c)}
+                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors active:scale-90"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => removeContact(c.name)}
+                        className="border border-outline-variant text-on-surface-variant px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition-transform hover:bg-error-container/10 hover:border-error hover:text-error"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -126,7 +155,12 @@ export default function FriendsPage() {
         )}
       </main>
 
-      <AddFriendModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={addContact} />
+      <AddFriendModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditingContact(null); }}
+        onSave={saveContact}
+        editing={editingContact}
+      />
     </div>
   );
 }
