@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, Plus, ArrowRight, ScanLine, QrCode, Megaphone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Receipt, Plus } from "lucide-react";
 import { formatRM } from "@/lib/utils";
 
 interface SavedBill {
@@ -26,138 +24,113 @@ export default function AppHomePage() {
     } catch {}
   }, []);
 
+  const totalCollected = 1240.00;
+  const progressPercent = 75;
+  const weeklyIncrease = 320;
+
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <header className="px-5 pt-6 pb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary-container/30 flex items-center justify-center">
-            <Receipt className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold leading-tight text-on-surface">Kongsi</h1>
-            <p className="text-[10px] text-on-surface-variant leading-tight">Split. Share. Settled.</p>
+    <div className="max-w-3xl mx-auto px-5 pt-6 pb-24 flex flex-col gap-8">
+      {/* Total Collected Bento Card */}
+      <section className="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        {/* Decorative background blob */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl" />
+        <div className="flex flex-col gap-3 z-10 w-full md:w-auto text-center md:text-left">
+          <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Collected</h2>
+          <p className="text-5xl font-bold text-primary tracking-[-0.02em]">RM{totalCollected.toFixed(2)}</p>
+          <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
+            <span className="inline-flex items-center gap-1 bg-success-container/20 text-on-success-container px-2 py-1 rounded-full text-xs font-semibold">
+              <span className="material-symbols-outlined text-[16px]">trending_up</span>
+              +RM{weeklyIncrease} this week
+            </span>
           </div>
         </div>
-      </header>
-
-      {/* Content */}
-      <section className="px-5 pb-8">
-        {bills.length === 0 ? (
-          /* First visit */
-          <div className="pt-10 pb-8 text-center">
-            <div className="mb-8">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary-container/20 border border-primary/20 flex items-center justify-center">
-                <Receipt className="w-10 h-10 text-primary/70" />
-              </div>
-              <h2 className="text-xl font-bold mb-2 text-on-surface">
-                Split bills,{" "}
-                <span className="text-primary">the easy way</span>
-              </h2>
-              <p className="text-sm text-on-surface-variant max-w-xs mx-auto leading-relaxed">
-                Scan a restaurant receipt or enter manually. Share via WhatsApp. Track who paid.
-              </p>
-            </div>
-
-            <div className="space-y-3 max-w-xs mx-auto">
-              <Button
-                className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:opacity-90 font-medium shadow-[0px_4px_12px_rgba(70,72,212,0.2)]"
-                onClick={() => router.push("/app/scan")}
-              >
-                <ScanLine className="w-5 h-5 mr-2" />
-                Scan Receipt
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-12 rounded-xl border-outline-variant text-on-surface"
-                onClick={() => router.push("/app/create")}
-              >
-                Enter Manually
-              </Button>
-            </div>
-
-            <p className="mt-8 text-[11px] text-on-surface-variant">
-              No login. No app install. Just a link.
-            </p>
+        {/* Progress Ring */}
+        <div className="relative w-32 h-32 flex-shrink-0 z-10 mx-auto md:mx-0">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle className="text-surface-container-high" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeWidth="8" />
+            <circle className="text-primary transition-all duration-1000 ease-out" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeDasharray="251.2" strokeDashoffset="62.8" strokeWidth="8" />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xl font-semibold text-on-surface">{progressPercent}%</span>
+            <span className="text-[10px] font-semibold text-on-surface-variant uppercase">Recovered</span>
           </div>
-        ) : (
-          /* Returning user — Quick actions + bill list */
-          <div>
-            {/* Quick actions grid */}
-            <div className="grid grid-cols-3 gap-3 mb-6 mt-2">
-              <button
-                onClick={() => router.push("/app/create")}
-                className="flex flex-col items-center justify-center gap-2 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-0.5 transition-all group border border-transparent hover:border-primary/20"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary-container/20 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Plus className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">New Bill</span>
-              </button>
-              <button
-                onClick={() => router.push("/app/scan")}
-                className="flex flex-col items-center justify-center gap-2 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-0.5 transition-all group border border-transparent hover:border-primary/20"
-              >
-                <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <ScanLine className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Scan</span>
-              </button>
-              <button
-                onClick={() => {
-                  // Find most recent bill and remind all unpaid
-                  if (bills.length > 0) {
-                    router.push(`/b/${bills[0].id}/dashboard?token=${bills[0].admin_token}`);
-                  }
-                }}
-                className="flex flex-col items-center justify-center gap-2 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-0.5 transition-all group border border-transparent hover:border-primary/20"
-              >
-                <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Megaphone className="w-6 h-6" />
-                </div>
-                <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Dashboard</span>
-              </button>
-            </div>
-
-            {/* Recent bills */}
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Active Bills</h2>
-              <button onClick={() => router.push("/app/history")} className="text-xs text-primary font-semibold hover:underline">View All</button>
-            </div>
-            <div className="space-y-2">
-              {bills.slice(0, 5).map((bill) => (
-                <Card
-                  key={bill.id}
-                  className="p-4 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] transition-all cursor-pointer group"
-                  onClick={() => router.push(`/b/${bill.id}/dashboard?token=${bill.admin_token}`)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-3 items-center">
-                      <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0">
-                        <Receipt className="w-5 h-5 text-on-surface-variant" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-on-surface">{bill.title}</p>
-                        <p className="text-xs text-on-surface-variant">
-                          {new Date(bill.created.replace(" ", "T")).toLocaleDateString("en-MY", {
-                            day: "numeric", month: "short",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-primary">{formatRM(bill.total_amount)}</p>
-                    </div>
-                  </div>
-                  <div className="w-full bg-surface-container-high rounded-full h-2 mt-3">
-                    <div className="bg-success h-2 rounded-full" style={{ width: "0%" }} />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </section>
+
+      {/* Quick Actions Grid */}
+      <section className="grid grid-cols-3 gap-3 md:gap-4">
+        <button
+          onClick={() => router.push("/app/create")}
+          className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
+        >
+          <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Plus className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Create New Bill</span>
+        </button>
+        <button
+          onClick={() => router.push("/app/scan")}
+          className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
+        >
+          <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-2xl">📄</span>
+          </div>
+          <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Scan Receipt</span>
+        </button>
+        <button
+          onClick={() => {
+            if (bills.length > 0) {
+              router.push(`/b/${bills[0].id}/dashboard?token=${bills[0].admin_token}`);
+            }
+          }}
+          className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
+        >
+          <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span className="text-2xl">📢</span>
+          </div>
+          <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">Remind All</span>
+        </button>
+      </section>
+
+      {/* Active Bills List */}
+      {bills.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-semibold text-on-surface">Active Bills</h3>
+            <button onClick={() => router.push("/app/history")} className="text-xs font-semibold text-primary hover:underline">View All</button>
+          </div>
+          <div className="flex flex-col gap-3">
+            {bills.map((bill) => (
+              <div
+                key={bill.id}
+                onClick={() => router.push(`/b/${bill.id}/dashboard?token=${bill.admin_token}`)}
+                className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] transition-shadow cursor-pointer flex flex-col gap-3"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0">
+                      <Receipt className="w-5 h-5 text-on-surface-variant" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-on-surface">{bill.title}</h4>
+                      <p className="text-xs text-on-surface-variant">Created {new Date(bill.created.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-primary">{formatRM(bill.total_amount)}</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success-container/20 text-on-success-container">
+                      0/{formatRM(bill.total_amount)}
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full bg-surface-container-high rounded-full h-2">
+                  <div className="bg-success h-2 rounded-full" style={{ width: "0%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

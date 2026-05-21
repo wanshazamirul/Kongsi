@@ -2,14 +2,9 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, Copy, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ProgressRing } from "@/components/progress-ring";
-import { ConfettiBurst } from "@/components/confetti-burst";
-import { PaidStamp } from "@/components/paid-stamp";
 import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
 
@@ -67,7 +62,7 @@ function DashboardContent() {
 
   function shareWhatsApp() {
     const url = `${window.location.origin}/b/${id}`;
-    const text = `Kongsi: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\n${url}`;
+    const text = `Kongsi: ${bill?.title}\nTotal: ${bill ? formatRM(bill.total_amount) : ""}\n\nPay here: ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
@@ -76,19 +71,6 @@ function DashboardContent() {
     const text = `Yo ${p.name}, you still owe RM${p.amount.toFixed(2)} for "${bill?.title}". Please pay here: ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     toast.success(`Nudge sent to ${p.name}!`);
-  }
-
-  function remindAll() {
-    if (!bill) return;
-    const unpaid = bill.participants.filter((p) => !p.paid);
-    if (unpaid.length === 0) {
-      toast.success("Everyone has paid!");
-      return;
-    }
-    const url = `${window.location.origin}/b/${id}`;
-    const text = `Reminder: Please pay for "${bill.title}". Here's the link: ${url}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-    toast.success(`Nudging ${unpaid.length} people...`);
   }
 
   if (!token) {
@@ -102,11 +84,7 @@ function DashboardContent() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
 
   if (error || !bill) {
@@ -128,152 +106,139 @@ function DashboardContent() {
   const displayList = tab === "unpaid" ? unpaidParticipants : paidParticipants;
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto px-5 py-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <a href="/app" className="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
-          <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
-        </a>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold text-on-surface">{bill.title}</h1>
-          <p className="text-xs text-on-surface-variant">Organizer Dashboard</p>
+    <div className="min-h-screen pb-24">
+      {/* Top App Bar */}
+      <header className="bg-surface shadow-[0px_4px_20px_rgba(15,23,42,0.05)] w-full top-0 sticky z-50">
+        <div className="flex justify-between items-center w-full px-5 h-12">
+          <a href="/app" className="text-primary hover:bg-surface-container-low transition-colors rounded-full p-2">
+            <ArrowLeft className="w-5 h-5" />
+          </a>
+          <h1 className="text-lg font-bold text-primary">Kongsi</h1>
+          <div className="w-10" />
         </div>
-        <button onClick={shareWhatsApp} className="bg-surface-container-low text-primary hover:bg-surface-container-high transition-colors rounded-full p-2 flex items-center gap-2 px-4">
-          <Share2 className="w-4 h-4" />
-          <span className="text-xs font-bold">Share Link</span>
-        </button>
-      </div>
+      </header>
 
-      {/* Progress card */}
-      <Card className="p-5 bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] mb-5">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-center sm:text-left">
-            <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Collected</h2>
-            <div className="mt-1">
-              <span className="text-3xl font-bold text-primary">RM{totalPaid.toFixed(2)}</span>
-              <span className="text-lg text-on-surface-variant font-medium"> / RM{bill.total_amount.toFixed(2)}</span>
+      <main className="max-w-2xl mx-auto px-5 pt-6 pb-8 flex flex-col gap-8">
+        {/* Title */}
+        <section className="flex flex-col gap-3">
+          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>
+          <p className="text-sm text-on-surface-variant flex items-center gap-2">
+            <span className="text-lg">📅</span>
+            Organized by You
+          </p>
+        </section>
+
+        {/* Progress Card */}
+        <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex flex-col gap-4">
+          <div className="flex justify-between items-end">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Collected</span>
+              <div className="mt-1">
+                <span className="text-4xl font-bold text-primary tracking-[-0.02em]">RM{totalPaid.toFixed(0)}</span>
+                <span className="text-lg text-on-surface-variant font-medium"> / RM{bill.total_amount.toFixed(0)}</span>
+              </div>
+            </div>
+            <button
+              onClick={shareWhatsApp}
+              className="bg-surface-container-low text-primary hover:bg-surface-container-high transition-colors rounded-full px-4 py-2 flex items-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="text-xs font-bold">Share Link</span>
+            </button>
+          </div>
+          <div className="w-full">
+            <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-success"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-[10px] font-semibold text-on-surface-variant uppercase">
+              <span>{Math.round(progress)}% Collected</span>
+              <span>{paidParticipants.length} of {bill.participants.length} Paid</span>
             </div>
           </div>
-          <ProgressRing progress={progress} label="" />
-        </div>
-        <div className="w-full bg-surface-container-high rounded-full h-2 mt-4">
-          <motion.div
-            className="h-2 rounded-full bg-success"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-        <div className="flex justify-between mt-2 text-xs text-on-surface-variant">
-          <span>{Math.round(progress)}% Collected</span>
-          <span>{paidParticipants.length} of {bill.participants.length} Paid</span>
-        </div>
-      </Card>
+        </section>
 
-      {/* Tabs */}
-      <div className="flex gap-4 border-b border-outline-variant pb-2 mb-4">
-        <button
-          onClick={() => setTab("unpaid")}
-          className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "unpaid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
-        >
-          Unpaid ({unpaidParticipants.length})
-        </button>
-        <button
-          onClick={() => setTab("paid")}
-          className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "paid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
-        >
-          Paid ({paidParticipants.length})
-        </button>
-      </div>
-
-      {/* Participant list */}
-      <div className="space-y-2 mb-6">
-        <AnimatePresence mode="popLayout">
-          {displayList.map((p, i) => (
-            <motion.div
-              key={p.id}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ delay: i * 0.03 }}
+        {/* Tabs & Lists */}
+        <section className="flex flex-col gap-4">
+          <div className="flex gap-4 border-b border-outline-variant pb-2">
+            <button
+              onClick={() => setTab("unpaid")}
+              className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "unpaid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
             >
-              <Card className="p-3 flex items-center justify-between bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] relative overflow-hidden">
-                {p.paid && <PaidStamp />}
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-lg">
-                    {p.name[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-on-surface">{p.name}</p>
-                    {p.paid && p.paid_at && (
-                      <p className="text-[11px] text-on-surface-variant">
-                        {new Date(p.paid_at.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
+              Unpaid ({unpaidParticipants.length})
+            </button>
+            <button
+              onClick={() => setTab("paid")}
+              className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "paid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              Paid ({paidParticipants.length})
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <AnimatePresence mode="popLayout">
+              {displayList.map((p) => (
+                <motion.div
+                  key={p.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <div className="bg-surface-container-lowest rounded-xl p-3 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-lg">
+                        {p.name[0].toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-on-surface">{p.name}</span>
+                        <span className={`text-sm ${p.paid ? "text-on-surface-variant line-through" : "text-error font-semibold"}`}>
+                          RM{p.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    {!p.paid ? (
+                      <button
+                        onClick={() => nudgeParticipant(p)}
+                        className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
+                      >
+                        Nudge
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-success-container/20 text-success text-[10px] font-semibold">
+                        <CheckCircle2 className="w-3 h-3" /> Paid
+                      </div>
                     )}
-                    {!p.paid && (
-                      <p className="text-sm font-semibold text-error">RM{p.amount.toFixed(2)}</p>
-                    )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {p.paid ? (
-                    <Badge className="bg-success-container text-on-success-container text-[10px] flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Paid
-                    </Badge>
-                  ) : (
-                    <button
-                      onClick={() => nudgeParticipant(p)}
-                      className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
-                    >
-                      Nudge
-                    </button>
-                  )}
-                  <span className="text-sm font-medium text-on-surface w-16 text-right">
-                    RM{p.amount.toFixed(2)}
-                  </span>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {displayList.length === 0 && (
+              <p className="text-center text-sm text-on-surface-variant py-8">
+                {tab === "unpaid" ? "Everyone has paid!" : "No payments yet."}
+              </p>
+            )}
+          </div>
+        </section>
 
-      {/* Quick actions */}
-      <div className="flex gap-2 mb-6">
-        <Button onClick={remindAll} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
-          Remind All
-        </Button>
-        <Button onClick={shareWhatsApp} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
-          <Share2 className="w-4 h-4 mr-1" /> Share
-        </Button>
-        <Button onClick={copyPublicLink} variant="outline" className="flex-1 rounded-xl border-outline-variant text-on-surface-variant hover:text-on-surface">
-          <Copy className="w-4 h-4 mr-1" /> Copy Link
-        </Button>
-      </div>
-
-      <ConfettiBurst trigger={allPaid} />
-      {allPaid && (
-        <div className="mt-4 text-center">
-          <p className="text-lg font-bold text-success">All collected!</p>
-          <p className="text-xs text-on-surface-variant mt-1">Everyone has paid. Bil settle!</p>
-        </div>
-      )}
-
-      <p className="text-center text-[10px] text-on-surface-variant mt-6 pb-safe">
-        Bookmark this page — it's the only way to access this dashboard.
-      </p>
+        {allPaid && (
+          <div className="text-center py-4">
+            <p className="text-lg font-bold text-success">All collected!</p>
+            <p className="text-xs text-on-surface-variant mt-1">Everyone has paid. Bil settle!</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
       <DashboardContent />
     </Suspense>
   );
