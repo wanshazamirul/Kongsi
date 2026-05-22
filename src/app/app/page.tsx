@@ -386,14 +386,8 @@ export default function AppHomePage() {
               <Receipt className="w-8 h-8 text-on-surface-variant" />
             </div>
             <p className="text-sm text-on-surface-variant text-center">
-              No bills yet. Create one to get started.
+              No bills yet. Tap "Create New Bill" above to get started.
             </p>
-            <button
-              onClick={() => router.push("/app/create")}
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
-            >
-              <Plus className="w-4 h-4" /> Create Bill
-            </button>
           </section>
         )}
       </div>
