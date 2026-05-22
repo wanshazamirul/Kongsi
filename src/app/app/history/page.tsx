@@ -175,7 +175,7 @@ export default function BillsPage() {
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-row justify-center">
             <button
               onClick={() => setDeleteId(null)}
               disabled={deleting}
