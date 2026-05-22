@@ -2,10 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Receipt } from "lucide-react";
+import { Plus, Receipt, Trash2, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { formatRM } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SavedBill {
   id: string;
@@ -19,10 +27,25 @@ export default function BillsPage() {
   const router = useRouter();
   const [bills, setBills] = useState<SavedBill[]>([]);
   const [tab, setTab] = useState<"active" | "past">("active");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     try { setBills(JSON.parse(localStorage.getItem("kongsi_bills") || "[]")); } catch {}
   }, []);
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await fetch(`/api/bills/${deleteId}`, { method: "DELETE" }).catch(() => {});
+      const updated = bills.filter((b) => b.id !== deleteId);
+      setBills(updated);
+      localStorage.setItem("kongsi_bills", JSON.stringify(updated));
+      setDeleteId(null);
+    } catch {}
+    setDeleting(false);
+  }
 
   const totalOutstanding = bills.reduce((s, b) => s + b.total_amount, 0);
 
@@ -53,7 +76,6 @@ export default function BillsPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Top App Bar */}
       <TopBar />
 
       <main className="px-5 max-w-3xl mx-auto">
@@ -88,7 +110,7 @@ export default function BillsPage() {
             <span className="bg-error-container/30 text-error px-2 py-1 rounded-full text-[10px] font-semibold">Across {bills.length} {bills.length === 1 ? "bill" : "bills"}</span>
           </div>
           <div className="text-4xl font-bold text-on-surface tracking-[-0.02em] mb-1 relative z-10">
-            RM{totalOutstanding.toFixed(2)}
+            {formatRM(totalOutstanding)}
           </div>
           <div className="text-sm text-on-surface-variant relative z-10">
             Active bills
@@ -100,36 +122,82 @@ export default function BillsPage() {
           {bills.map((bill) => (
             <div
               key={bill.id}
-              onClick={() => router.push(`/b/${bill.id}/dashboard?token=${bill.admin_token}`)}
               className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-[0.98] transition-transform cursor-pointer border border-transparent hover:border-outline-variant group"
             >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-primary/5 transition-colors">
-                    <Receipt className="w-6 h-6" />
+              <div onClick={() => router.push(`/b/${bill.id}/dashboard?token=${bill.admin_token}`)}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:bg-primary/5 transition-colors">
+                      <Receipt className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-on-surface leading-tight">{bill.title}</h3>
+                      <p className="text-xs text-on-surface-variant">
+                        {new Date(bill.created.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-on-surface leading-tight">{bill.title}</h3>
-                    <p className="text-xs text-on-surface-variant">
-                      {new Date(bill.created.replace(" ", "T")).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
+                  <div className="flex items-start gap-2">
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-on-surface">{formatRM(bill.total_amount)}</div>
+                      <div className="text-[10px] font-semibold text-on-surface-variant uppercase">Total</div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(bill.id);
+                      }}
+                      className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-on-surface">{formatRM(bill.total_amount)}</div>
-                  <div className="text-[10px] font-semibold text-on-surface-variant uppercase">Total</div>
+                <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+                  <div className="h-full bg-primary w-[0%] rounded-full" />
                 </div>
-              </div>
-              <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
-                <div className="h-full bg-primary w-[0%] rounded-full" />
-              </div>
-              <div className="mt-2 text-right text-[10px] font-semibold text-on-surface-variant">
-                Tap to view dashboard
+                <div className="mt-2 text-right text-[10px] font-semibold text-on-surface-variant">
+                  Tap to view dashboard
+                </div>
               </div>
             </div>
           ))}
         </div>
       </main>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Bill</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this bill and all participant data.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setDeleteId(null)}
+              disabled={deleting}
+              className="h-9 px-4 rounded-lg border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity"
+            >
+              {deleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

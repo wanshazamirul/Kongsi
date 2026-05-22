@@ -1,6 +1,6 @@
 import { safeError } from "@/lib/safe-error";
 import { NextResponse } from "next/server";
-import { pbGet } from "@/lib/pb-server";
+import { pbGet, pbDelete } from "@/lib/pb-server";
 
 export async function GET(
   request: Request,
@@ -26,6 +26,19 @@ export async function GET(
       created: bill.created,
       participants: participants.items,
     });
+  } catch (err) {
+    return NextResponse.json({ error: safeError(err) }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await pbDelete(`collections/kongsi_bills/records/${id}`);
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: safeError(err) }, { status: 500 });
   }
