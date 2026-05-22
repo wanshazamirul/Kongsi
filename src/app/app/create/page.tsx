@@ -207,7 +207,7 @@ export default function CreateBillPage() {
                 <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2" htmlFor="title">Bill Title</label>
                 <Input
                   id="title"
-                  className="block w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-lg text-on-surface focus:border-primary focus:ring-1 focus:ring-primary shadow-[0px_4px_20px_rgba(15,23,42,0.05)] placeholder:text-outline-variant transition-all"
+                  className="block w-full px-4 py-5 bg-surface-container-lowest border border-outline-variant rounded-xl text-lg text-on-surface focus:border-primary focus:ring-1 focus:ring-primary shadow-[0px_4px_20px_rgba(15,23,42,0.05)] placeholder:text-outline-variant transition-all"
                   placeholder="e.g. Dinner at Amore"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -311,7 +311,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="w-full flex items-center justify-center py-4 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 Next <span className="ml-2">→</span>
               </Button>
@@ -439,7 +439,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="w-full flex items-center justify-center py-4 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 Review <span className="ml-2">→</span>
               </Button>
@@ -567,7 +567,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full flex items-center justify-center py-4 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Bill & Share"}
               </Button>
