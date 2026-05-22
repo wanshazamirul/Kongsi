@@ -132,7 +132,7 @@ export default function CreateBillPage() {
     <div className="min-h-screen flex flex-col bg-surface">
       <TopBar showBack onBack={() => (step === 0 ? router.push("/app") : setStep(step - 1))} />
 
-      <main className="flex-grow flex flex-col px-5 pb-8 max-w-lg mx-auto w-full">
+      <main className="flex-grow flex flex-col px-5 pb-24 max-w-lg mx-auto w-full">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-1">
