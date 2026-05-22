@@ -52,7 +52,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right — Visual card mockup */}
-            <div className="hidden md:flex justify-center lg:justify-end">
+            <div className="flex justify-center lg:justify-end">
               <div className="relative w-full max-w-[380px]">
                 {/* Floating bill card */}
                 <div className="relative bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-[0px_8px_32px_rgba(70,72,212,0.08)] p-6 z-10">
