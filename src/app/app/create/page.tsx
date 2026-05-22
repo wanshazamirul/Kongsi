@@ -244,24 +244,24 @@ export default function CreateBillPage() {
                 {lineItems.length === 0 && (
                   <button
                     onClick={addLineItem}
-                    className="w-full py-3 border-2 border-dashed border-outline-variant rounded-xl text-xs text-on-surface-variant hover:border-primary/40 hover:text-primary transition-colors"
+                    className="w-full py-4 border-2 border-dashed border-outline-variant rounded-xl text-sm text-on-surface-variant hover:border-primary/40 hover:text-primary transition-colors"
                   >
                     + Add items from the receipt
                   </button>
                 )}
 
                 {lineItems.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {lineItems.map((li, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-surface-container-lowest rounded-xl p-3 border border-outline-variant">
+                      <div key={i} className="flex items-center gap-3">
                         <Input
                           value={li.name}
                           onChange={(e) => updateLineItem(i, "name", e.target.value)}
                           placeholder="Item name"
-                          className="flex-1 border-0 bg-transparent focus:ring-0 p-0 h-auto text-sm text-on-surface placeholder:text-outline-variant"
+                          className="flex-1 px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline-variant transition-all"
                         />
-                        <div className="relative flex items-center">
-                          <span className="text-xs text-on-surface-variant mr-1">RM</span>
+                        <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                          <span className="pl-3 text-xs text-on-surface-variant">RM</span>
                           <Input
                             value={li.amount}
                             onChange={(e) => updateLineItem(i, "amount", e.target.value)}
@@ -269,10 +269,10 @@ export default function CreateBillPage() {
                             type="number"
                             step="0.01"
                             min="0"
-                            className="w-20 border-0 bg-transparent focus:ring-0 p-0 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
+                            className="w-24 border-0 bg-transparent focus:ring-0 py-3 pr-3 pl-1 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
                           />
                         </div>
-                        <button onClick={() => removeLineItem(i)} className="p-1 text-on-surface-variant/40 hover:text-destructive transition-colors">
+                        <button onClick={() => removeLineItem(i)} className="p-2 text-on-surface-variant/40 hover:text-destructive transition-colors flex-shrink-0">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
@@ -341,11 +341,11 @@ export default function CreateBillPage() {
             </div>
 
             {/* Quick Add Contacts — round avatar grid */}
-            {filteredContacts.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Quick Add</h2>
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {filteredContacts.slice(0, 8).map((c) => (
+            <div className="mb-6">
+              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Quick Add</h2>
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {filteredContacts.length > 0 ? (
+                  filteredContacts.slice(0, 8).map((c) => (
                     <button
                       key={c.name}
                       onClick={() => {
@@ -363,31 +363,35 @@ export default function CreateBillPage() {
                       </div>
                       <span className="text-xs text-on-surface">{c.name}</span>
                     </button>
-                  ))}
-                  <button
-                    onClick={() => {
-                      const n = prompt("Add person:");
-                      if (n?.trim()) {
-                        setParticipants([...participants, { name: n.trim(), amount: "" }]);
-                        try {
-                          const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-                          if (!contacts.some((c: any) => c.name.toLowerCase() === n.trim().toLowerCase())) {
-                            contacts.push({ name: n.trim() });
-                            localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
-                          }
-                        } catch {}
-                      }
-                    }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group flex-shrink-0"
-                  >
-                    <div className="w-14 h-14 rounded-full border-2 border-dashed border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
-                      <Plus className="w-6 h-6 text-outline group-hover:text-primary" />
-                    </div>
-                    <span className="text-xs text-primary">New</span>
-                  </button>
-                </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-on-surface-variant py-3">
+                    No saved contacts yet. Add friends below or from the Friends tab.
+                  </p>
+                )}
+                <button
+                  onClick={() => {
+                    const n = prompt("Add person:");
+                    if (n?.trim()) {
+                      setParticipants([...participants, { name: n.trim(), amount: "" }]);
+                      try {
+                        const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+                        if (!contacts.some((c: any) => c.name.toLowerCase() === n.trim().toLowerCase())) {
+                          contacts.push({ name: n.trim() });
+                          localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
+                        }
+                      } catch {}
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 cursor-pointer group flex-shrink-0"
+                >
+                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
+                    <Plus className="w-6 h-6 text-outline group-hover:text-primary" />
+                  </div>
+                  <span className="text-xs text-primary">Add</span>
+                </button>
               </div>
-            )}
+            </div>
 
             {/* Selected Participants */}
             <div className="flex-1">
