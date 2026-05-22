@@ -50,13 +50,16 @@ Split bill payment tracker. Dutchie-inspired design system. KrackedDevs bounty (
 | `GET /api/bills/[id]` | Public bill data | None |
 | `POST /api/bills/[id]/pay` | Confirm payment (mock) | None |
 | `GET /api/bills/[id]/dashboard?token=xxx` | Dashboard data | Token |
+| `DELETE /api/bills/[id]` | Delete bill + cascade participants | None |
 | `POST /api/scan-receipt` | Groq Vision receipt OCR | None |
 
 ## Flow
 
-1. Organizer creates bill via 3-step wizard (details → participants → review)
-2. Split equally (default) or custom amounts per person
-3. Optional: scan receipt → assign items to specific people via avatar taps
+1. Organizer creates bill via 3-step wizard (details+items → participants → review)
+2. Step 1: Total amount, title, optional line items (name+price) with auto tax calc
+3. Step 2: Round avatar grid, split equally (default) or custom amounts per person
+4. Step 3: Review with editable amounts, line items breakdown, balance verification
+5. Optional: scan receipt → assign items to specific people via avatar taps
 4. Gets two URLs: public (`/b/[id]`) and admin (`/b/[id]/dashboard?token=xxx`)
 5. Shares via WhatsApp. Dashboard has tabs (Unpaid/Paid) + per-person nudge buttons
 6. Friends open link → see payment card with split breakdown → confirm payment
@@ -69,8 +72,10 @@ Split bill payment tracker. Dutchie-inspired design system. KrackedDevs bounty (
 - **Color**: OKLCH, surface elevation tokens (lowest→highest), primary `oklch(0.48 0.2 280)`
 - **Typography**: Inter (next/font), 48px display amounts, 20px numeric data, 12px label caps
 - **Surface system**: surface-container-lowest (white) → surface-container-highest (darkest elevation)
+- **Landing page**: Two-column hero (desktop), floating bill card mockup, 3-column feature grid, "Why Kongsi" section, footer
+- **Home hero card**: Inverted dark bg (slate-900) in light mode, dual-color donut (emerald=paid, amber=remaining), repayment rate badge
 - **Anti-patterns avoided**: No AI gradients, no identical card grids, no glassmorphism as default, no bounce animations
-- **Components**: ProgressRing (SVG donut, indigo gradient), PaidStamp (success spring seal), ConfettiBurst (indigo/mint/gold)
+- **Components**: ProgressRing (SVG donut, indigo gradient), PaidStamp (success spring seal), ConfettiBurst (indigo/mint/gold), Delete confirmation dialog
 
 ## PocketBase Setup
 
