@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, Plus, Trash2, Loader2 } from "lucide-react";
+import { Receipt, Plus, Trash2, Loader2, ScanLine, Bell } from "lucide-react";
 import { formatRM } from "@/lib/utils";
 import { TopBar } from "@/components/top-bar";
 import {
@@ -252,8 +252,8 @@ export default function AppHomePage() {
             onClick={() => fileRef.current?.click()}
             className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
           >
-            <div className="w-12 h-12 rounded-full bg-accent/15 text-accent flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-2xl">📄</span>
+            <div className="w-12 h-12 rounded-full bg-accent/20 text-accent flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ScanLine className="w-6 h-6" />
             </div>
             <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">
               Upload
@@ -269,8 +269,8 @@ export default function AppHomePage() {
             }}
             className="flex flex-col items-center justify-center gap-3 bg-surface-container-lowest p-4 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-1 transition-all group border border-transparent hover:border-primary/20"
           >
-            <div className="w-12 h-12 rounded-full bg-accent/10 text-accent flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-2xl">📢</span>
+            <div className="w-12 h-12 rounded-full bg-secondary/20 text-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Bell className="w-6 h-6" />
             </div>
             <span className="text-[10px] font-semibold text-on-surface text-center uppercase tracking-wider">
               Remind All
