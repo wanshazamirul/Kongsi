@@ -40,6 +40,14 @@ export default function ProfilePage() {
         const data = reader.result as string;
         setAvatar(data);
         localStorage.setItem("kongsi_avatar", data);
+        // Also sync to contacts so it shows across the app
+        try {
+          const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+          const youIdx = contacts.findIndex((c: any) => c.name === "You");
+          if (youIdx >= 0) contacts[youIdx].avatar = data;
+          else contacts.push({ name: "You", avatar: data });
+          localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
+        } catch {}
       };
       reader.readAsDataURL(webp);
     } catch {}

@@ -10,7 +10,7 @@ interface Props {
 
 export function TopBar({ title = "Kongsi", showBack = false, onBack }: Props) {
   return (
-    <header className="sticky top-0 w-full z-50 bg-surface shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
+    <header className="sticky top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
       <div className="flex items-center w-full px-5 h-14">
         {showBack && (
           <button
