@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -28,6 +28,9 @@ interface Participant {
   amount: number;
   paid: boolean;
   paid_at: string | null;
+  payment_token?: string;
+  proof_image?: string;
+  status?: string;
 }
 
 interface Bill {
@@ -38,6 +41,7 @@ interface Bill {
   due_date: string;
   created: string;
   admin_token: string;
+  admin_qr?: string;
   participants: Participant[];
 }
 
@@ -51,7 +55,11 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const contactAvatars = useContactAvatars();
-  const [tab, setTab] = useState<"unpaid" | "paid">("unpaid");
+  const [tab, setTab] = useState<"unpaid" | "pending" | "paid">("unpaid");
+  const [qrUploading, setQrUploading] = useState(false);
+  const [approving, setApproving] = useState<string | null>(null);
+  const [adminQr, setAdminQr] = useState<string | null>(null);
+  const qrFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (token) loadDashboard();
@@ -60,13 +68,81 @@ function DashboardContent() {
   async function loadDashboard() {
     const res = await fetch(`/api/bills/${id}/dashboard?token=${token}`);
     if (res.ok) {
-      setBill(await res.json());
+      const data = await res.json();
+      setBill(data);
+      if (data.admin_qr) setAdminQr(data.admin_qr);
       if (isNew) toast.success("Bill created! Share the link with your friends.");
     } else {
       const err = await res.json();
       setError(err.error || "Failed to load");
     }
     setLoading(false);
+  }
+
+  async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !bill) return;
+    setQrUploading(true);
+    try {
+      const { convertToWebP } = await import("@/lib/image-utils");
+      const webp = await convertToWebP(file);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await fetch(`/api/bills/${id}/qr`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qr_image: base64, admin_token: token }),
+        });
+        if (res.ok) {
+          setAdminQr(base64);
+          toast.success("QR uploaded!");
+        } else {
+          toast.error("Upload failed");
+        }
+      };
+      reader.readAsDataURL(webp);
+    } catch { toast.error("Failed to process image"); }
+    setQrUploading(false);
+    e.target.value = "";
+  }
+
+  async function approveParticipant(p: Participant) {
+    setApproving(p.id);
+    const res = await fetch(`/api/bills/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participant_id: p.id, admin_token: token }),
+    });
+    if (res.ok) {
+      toast.success(`Approved ${p.name}!`);
+      loadDashboard();
+    } else {
+      toast.error("Failed to approve");
+    }
+    setApproving(null);
+  }
+
+  async function rejectParticipant(p: Participant) {
+    setApproving(p.id);
+    const res = await fetch(`/api/bills/${id}/approve`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participant_id: p.id, admin_token: token }),
+    });
+    if (res.ok) {
+      toast.success(`Reverted ${p.name}`);
+      loadDashboard();
+    } else {
+      toast.error("Failed to revert");
+    }
+    setApproving(null);
+  }
+
+  function copyParticipantLink(p: Participant) {
+    const url = `${window.location.origin}/b/${id}/pay/${p.id}?token=${p.payment_token || ""}`;
+    navigator.clipboard.writeText(url);
+    toast.success(`Link copied for ${p.name}!`);
   }
 
   function copyPublicLink() {
@@ -112,13 +188,14 @@ function DashboardContent() {
     );
   }
 
-  const paidParticipants = bill.participants.filter((p) => p.paid);
-  const unpaidParticipants = bill.participants.filter((p) => !p.paid);
+  const pendingParticipants = bill.participants.filter((p) => !p.paid && p.status === "pending");
+  const unpaidParticipants = bill.participants.filter((p) => !p.paid && p.status !== "pending");
+  const paidParticipants = bill.participants.filter((p) => p.paid || p.status === "paid");
   const totalPaid = paidParticipants.reduce((s, p) => s + p.amount, 0);
   const remaining = bill.total_amount - totalPaid;
   const progress = bill.total_amount > 0 ? (totalPaid / bill.total_amount) * 100 : 0;
   const allPaid = paidParticipants.length === bill.participants.length;
-  const displayList = tab === "unpaid" ? unpaidParticipants : paidParticipants;
+  const displayList = tab === "unpaid" ? unpaidParticipants : tab === "pending" ? pendingParticipants : paidParticipants;
 
   return (
     <div className="min-h-screen pb-24">
@@ -168,6 +245,38 @@ function DashboardContent() {
           </div>
         </section>
 
+        {/* Payment QR */}
+        <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
+          <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Payment QR</h3>
+          {adminQr ? (
+            <div className="flex items-center gap-4">
+              <img src={adminQr} alt="QR" className="w-16 h-16 rounded-lg object-cover" />
+              <div className="flex-1">
+                <p className="text-xs text-on-surface">QR uploaded</p>
+                <button
+                  onClick={() => { setAdminQr(null); }}
+                  className="text-xs text-primary hover:underline mt-1"
+                >
+                  Replace
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => qrFileRef.current?.click()}
+              disabled={qrUploading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary transition-colors"
+            >
+              {qrUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <><Upload className="w-4 h-4" /><span className="text-sm font-semibold">Upload QR Code</span></>
+              )}
+            </button>
+          )}
+          <input ref={qrFileRef} type="file" accept="image/*" onChange={handleQrUpload} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
+        </section>
+
         {/* Tabs & Lists */}
         <section className="flex flex-col gap-4">
           <div className="flex gap-4 border-b border-outline-variant pb-2">
@@ -176,6 +285,12 @@ function DashboardContent() {
               className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "unpaid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
             >
               Unpaid ({unpaidParticipants.length})
+            </button>
+            <button
+              onClick={() => setTab("pending")}
+              className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "pending" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              Pending ({pendingParticipants.length})
             </button>
             <button
               onClick={() => setTab("paid")}
@@ -195,36 +310,73 @@ function DashboardContent() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                 >
-                  <div className="bg-surface-container-lowest rounded-xl p-3 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-on-surface-variant font-bold text-lg">
-                        {contactAvatars[p.name] ? (
-                          <img src={contactAvatars[p.name]} alt={p.name} className="w-full h-full object-cover" />
-                        ) : (
-                          p.name[0].toUpperCase()
+                  <div className="bg-surface-container-lowest rounded-xl p-3 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-on-surface-variant font-bold text-lg">
+                          {contactAvatars[p.name] ? (
+                            <img src={contactAvatars[p.name]} alt={p.name} className="w-full h-full object-cover" />
+                          ) : (
+                            p.name[0].toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-on-surface">{p.name}</span>
+                          <span className={`text-sm ${p.paid || p.status === "pending" ? "text-on-surface-variant" : "text-error font-semibold"}`}>
+                            RM{p.amount.toFixed(2)}
+                            {p.status === "pending" && <span className="text-amber-600 dark:text-amber-400 text-[10px] ml-1">• Pending</span>}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => copyParticipantLink(p)}
+                          className="p-2 text-on-surface-variant/60 hover:text-primary transition-colors"
+                          title="Copy payment link"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        {!p.paid && p.status !== "pending" && (
+                          <button
+                            onClick={() => nudgeParticipant(p)}
+                            className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
+                          >
+                            Nudge
+                          </button>
+                        )}
+                        {(p.paid || p.status === "paid") && (
+                          <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-success-container/20 text-success text-[10px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" /> Paid
+                          </div>
                         )}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-on-surface">{p.name}</span>
-                        <span className={`text-sm ${p.paid ? "text-on-surface-variant line-through" : "text-error font-semibold"}`}>
-                          RM{p.amount.toFixed(2)}
-                        </span>
-                      </div>
                     </div>
-                    {!p.paid ? (
-                      <button
-                        onClick={() => nudgeParticipant(p)}
-                        className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
-                      >
-                        Nudge
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-success-container/20 text-success text-[10px] font-semibold">
-                        <CheckCircle2 className="w-3 h-3" /> Paid
+                    {/* Proof image + approve for pending */}
+                    {p.status === "pending" && (
+                      <div className="flex items-center gap-3 pt-1 border-t border-outline-variant">
+                        {p.proof_image && (
+                          <img src={p.proof_image} alt="Proof" className="w-12 h-12 rounded-lg object-cover" />
+                        )}
+                        <div className="flex gap-2 flex-1">
+                          <button
+                            onClick={() => approveParticipant(p)}
+                            disabled={approving === p.id}
+                            className="flex-1 py-1.5 rounded-lg bg-success text-white text-xs font-semibold flex items-center justify-center gap-1"
+                          >
+                            {approving === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><CheckCircle2 className="w-3 h-3" /> Approve</>}
+                          </button>
+                          <button
+                            onClick={() => rejectParticipant(p)}
+                            disabled={approving === p.id}
+                            className="py-1.5 px-3 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold"
+                          >
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
-                </motion.div>
+                  </motion.div>
               ))}
             </AnimatePresence>
             {displayList.length === 0 && (

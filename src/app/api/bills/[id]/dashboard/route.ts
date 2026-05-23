@@ -13,7 +13,7 @@ export async function GET(
 
     const bill = await pbGet<{
       id: string; title: string; total_amount: number;
-      description: string; due_date: string; admin_token: string; created: string;
+      description: string; due_date: string; admin_token: string; admin_qr: string; created: string;
     }>(`collections/kongsi_bills/records/${id}`).catch(() => null);
 
     if (!bill) return NextResponse.json({ error: "Bill not found" }, { status: 404 });
@@ -36,6 +36,7 @@ export async function GET(
       due_date: bill.due_date,
       created: bill.created,
       admin_token: bill.admin_token,
+      admin_qr: bill.admin_qr || null,
       participants: filtered,
     });
   } catch (err) {

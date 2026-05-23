@@ -32,14 +32,19 @@ export async function POST(request: Request) {
       admin_token: adminToken,
     });
 
-    // Create participants
+    // Create participants with payment tokens
+    const createdParticipants = [];
     for (const p of parsed.participants) {
-      await pbPost("collections/kongsi_participants/records", {
+      const paymentToken = generateToken(24);
+      const participant = await pbPost<{ id: string }>("collections/kongsi_participants/records", {
         bill_id: bill.id,
         name: p.name,
         amount: p.amount,
         paid: false,
+        payment_token: paymentToken,
+        status: "unpaid",
       });
+      createdParticipants.push({ id: participant.id, name: p.name, payment_token: paymentToken });
     }
 
     return NextResponse.json({
@@ -47,6 +52,7 @@ export async function POST(request: Request) {
       public_url: `/b/${bill.id}`,
       admin_url: `/b/${bill.id}/dashboard?token=${adminToken}`,
       admin_token: adminToken,
+      participants: createdParticipants,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
