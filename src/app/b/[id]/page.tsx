@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Receipt, Lock, UserPlus } from "lucide-react";
+import { TopBar } from "@/components/top-bar";
 import { getDeviceId } from "@/lib/device-id";
 
 function useContactAvatars() {
@@ -125,10 +126,7 @@ export default function PublicBillPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-success-container/20 blur-[120px]" />
       </div>
 
-      {/* Minimal Brand Header */}
-      <header className="w-full flex justify-center items-center py-4 z-10 relative">
-        <div className="text-lg font-bold text-primary tracking-tight">Kongsi</div>
-      </header>
+      <TopBar />
 
       {/* Main Content Canvas */}
       <main className="flex-1 flex flex-col items-center justify-center p-5 z-10 relative w-full max-w-md mx-auto">
