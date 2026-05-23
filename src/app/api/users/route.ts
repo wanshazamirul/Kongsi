@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     // Check if user already exists
     const existing = await pbGet<{ items: { id: string; name: string; device_id: string }[] }>(
       `collections/kongsi_users/records`,
-      { filter: `device_id="${device_id}"` },
+      { filter: `device_id='${device_id}'` },
     ).catch(() => null);
 
     if (existing && existing.items.length > 0) {
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
   try {
     const result = await pbGet<{ items: { id: string; name: string; device_id: string; avatar?: string }[] }>(
       `collections/kongsi_users/records`,
-      { filter: `device_id="${deviceId}"` },
+      { filter: `device_id='${deviceId}'` },
     );
     if (result.items.length > 0) {
       const u = result.items[0];

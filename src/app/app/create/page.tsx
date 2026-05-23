@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Search, UserPlus, Loader2, Check, X, Receipt, Trash2 } from "lucide-react";
+import { Plus, Loader2, X, Check } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,20 +39,20 @@ export default function CreateBillPage() {
 
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
-      const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-      const names = contacts.slice(0, 10).map((c: { name: string }) => ({ name: c.name, amount: "" }));
-      return [{ name: "You", amount: "" }, ...names];
+      const contacts: SavedContact[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      return [{ name: "You", amount: "" }, ...contacts.map((c) => ({ name: c.name, amount: "" }))];
     } catch { return [{ name: "You", amount: "" }]; }
   });
-  const [splitMode, setSplitMode] = useState<"equal" | "custom">("equal");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [recentContacts] = useState<SavedContact[]>(() => {
+  const [recentContacts, setRecentContacts] = useState<SavedContact[]>(() => {
     try { return JSON.parse(localStorage.getItem("kongsi_contacts") || "[]"); }
     catch { return []; }
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-select item assignments: itemIndex → participant indices
+  const [itemAssignments, setItemAssignments] = useState<Record<number, number[]>>({});
 
   const total = parseFloat(totalAmount) || 0;
   const validCount = participants.filter((p) => p.name.trim()).length;
@@ -69,20 +69,66 @@ export default function CreateBillPage() {
 
   function handleNext() {
     if (step === 0) {
-      // Auto-fill equal amounts going into step 2
-      const valid = participants.filter((p) => p.name.trim());
-      if (total > 0 && valid.length >= 2 && splitMode === "equal") {
-        const pp = Math.round((total / valid.length) * 100) / 100;
-        setParticipants(participants.map((p) => (p.name.trim() ? { ...p, amount: pp.toFixed(2) } : p)));
-      }
       setStep(1);
     } else if (step === 1) {
-      // Recalculate equal split in case things changed
+      // Calculate per-person totals from item assignments
       const valid = participants.filter((p) => p.name.trim());
-      if (splitMode === "equal" && total > 0 && valid.length >= 2) {
-        const pp = Math.round((total / valid.length) * 100) / 100;
-        setParticipants(participants.map((p) => (p.name.trim() ? { ...p, amount: pp.toFixed(2) } : p)));
+      const itemsToSplit = lineItems.filter((li) => li.name.trim() && (parseFloat(li.amount) || 0) > 0);
+      const hasLineItems = itemsToSplit.length > 0;
+
+      const personTotals: number[] = new Array(participants.length).fill(0);
+
+      if (hasLineItems) {
+        itemsToSplit.forEach((item, i) => {
+          const itemAmount = parseFloat(item.amount) || 0;
+          const assigned = itemAssignments[i];
+          if (assigned && assigned.length > 0) {
+            const perPerson = itemAmount / assigned.length;
+            assigned.forEach((pi) => {
+              personTotals[pi] = (personTotals[pi] || 0) + perPerson;
+            });
+          } else {
+            const perPerson = valid.length > 0 ? itemAmount / valid.length : 0;
+            valid.forEach((_, pi) => {
+              personTotals[pi] = (personTotals[pi] || 0) + perPerson;
+            });
+          }
+        });
+
+        // Distribute tax proportionally
+        const taxAmount = total - itemsSubtotal;
+        if (taxAmount > 0 && itemsSubtotal > 0) {
+          valid.forEach((_, pi) => {
+            const proportion = personTotals[pi] / itemsSubtotal;
+            personTotals[pi] += taxAmount * proportion;
+          });
+        }
+      } else {
+        // No line items — split total equally
+        const perPerson = total / valid.length;
+        valid.forEach((_, pi) => {
+          personTotals[pi] = perPerson;
+        });
       }
+
+      // Set participant amounts
+      const updated = participants.map((p, pi) => {
+        if (!p.name.trim()) return p;
+        const amt = personTotals[pi] || 0;
+        return { ...p, amount: amt > 0 ? amt.toFixed(2) : "0.00" };
+      });
+
+      // Fix rounding: ensure sum matches total
+      const partsSum = updated.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const diff = Math.round((total - partsSum) * 100) / 100;
+      if (diff !== 0 && updated.length > 0) {
+        const firstValid = updated.findIndex((p) => p.name.trim());
+        if (firstValid >= 0) {
+          updated[firstValid].amount = ((parseFloat(updated[firstValid].amount) || 0) + diff).toFixed(2);
+        }
+      }
+
+      setParticipants(updated);
       setStep(2);
     }
   }
@@ -127,9 +173,14 @@ export default function CreateBillPage() {
         const bills = stored ? JSON.parse(stored) : [];
         bills.unshift({ id: data.id, title: title.trim(), total_amount: Math.round(total * 100) / 100, created: new Date().toISOString(), admin_token: data.admin_token });
         localStorage.setItem("kongsi_bills", JSON.stringify(bills.slice(0, 20)));
-        const contacts = new Set(recentContacts.map((c) => c.name));
-        parsed.forEach((p) => { if (p.name !== "You") contacts.add(p.name); });
-        localStorage.setItem("kongsi_contacts", JSON.stringify(Array.from(contacts).map((n) => ({ name: n }))));
+        const contactMap = new Map<string, SavedContact>();
+        recentContacts.forEach((c) => contactMap.set(c.name, c));
+        parsed.forEach((p) => {
+          if (p.name !== "You" && !contactMap.has(p.name)) {
+            contactMap.set(p.name, { name: p.name });
+          }
+        });
+        localStorage.setItem("kongsi_contacts", JSON.stringify(Array.from(contactMap.values())));
       } catch {}
       router.push(`/b/${data.id}/dashboard?token=${data.admin_token}&created=true`);
     } else {
@@ -153,9 +204,19 @@ export default function CreateBillPage() {
     setLineItems(lineItems.filter((_, idx) => idx !== i));
   }
 
-  const filteredContacts = recentContacts.filter(
-    (c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()) && !participants.some((p) => p.name === c.name)
-  );
+  function toggleItemAssignment(itemIndex: number, participantIndex: number) {
+    setItemAssignments((prev) => {
+      const next = { ...prev };
+      const current = next[itemIndex] || [];
+      if (current.includes(participantIndex)) {
+        next[itemIndex] = current.filter((pi) => pi !== participantIndex);
+        if (next[itemIndex].length === 0) delete next[itemIndex];
+      } else {
+        next[itemIndex] = [...current, participantIndex];
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
@@ -319,124 +380,134 @@ export default function CreateBillPage() {
           </>
         )}
 
-        {/* ─── STEP 2: Participants ─── */}
+        {/* ─── STEP 2: Split Items ─── */}
         {step === 1 && (
           <>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-on-surface mb-2">Who's in?</h1>
-              <p className="text-sm text-on-surface-variant">Select people to split with.</p>
+              <h1 className="text-2xl font-bold text-on-surface mb-2">Split the bill</h1>
+              <p className="text-sm text-on-surface-variant">Tap avatars to assign who pays for each item.</p>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative w-full mb-6">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="w-5 h-5 text-outline" />
-              </div>
-              <Input
-                className="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm placeholder:text-on-surface-variant text-on-surface transition-all outline-none shadow-[0px_4px_20px_rgba(15,23,42,0.05)]"
-                placeholder="Search contacts"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Quick Add Contacts — round avatar grid */}
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Quick Add</h2>
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {filteredContacts.length > 0 ? (
-                  filteredContacts.slice(0, 8).map((c) => (
-                    <button
-                      key={c.name}
-                      onClick={() => {
-                        setParticipants([...participants, { name: c.name, amount: "" }]);
-                        setSearchQuery("");
-                      }}
-                      className="flex flex-col items-center gap-1.5 cursor-pointer group flex-shrink-0"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-surface-container-high border-2 border-transparent group-hover:border-primary transition-all flex items-center justify-center overflow-hidden">
-                        {c.avatar ? (
-                          <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-lg font-bold text-on-surface-variant">{c.name[0].toUpperCase()}</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-on-surface">{c.name}</span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="text-xs text-on-surface-variant py-3">
-                    No saved contacts yet. Add friends below or from the Friends tab.
-                  </p>
-                )}
-                <button
-                  onClick={() => {
-                    const n = prompt("Add person:");
-                    if (n?.trim()) {
-                      setParticipants([...participants, { name: n.trim(), amount: "" }]);
-                      try {
-                        const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-                        if (!contacts.some((c: any) => c.name.toLowerCase() === n.trim().toLowerCase())) {
-                          contacts.push({ name: n.trim() });
-                          localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
-                        }
-                      } catch {}
-                    }
-                  }}
-                  className="flex flex-col items-center gap-1.5 cursor-pointer group flex-shrink-0"
-                >
-                  <div className="w-14 h-14 rounded-full border-2 border-dashed border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
-                    <Plus className="w-6 h-6 text-outline group-hover:text-primary" />
-                  </div>
-                  <span className="text-xs text-primary">Add</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Selected Participants */}
-            <div className="flex-1">
-              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Selected ({validCount})</h2>
-              <div className="flex flex-wrap gap-3">
-                {participants.map((p, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <div className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-lg font-bold text-on-surface-variant border-2 border-transparent">
-                        {p.name ? p.name[0].toUpperCase() : "?"}
-                      </div>
-                      {i !== 0 && (
-                        <button
-                          onClick={() => setParticipants(participants.filter((_, idx) => idx !== i))}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white rounded-full flex items-center justify-center shadow-sm"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+            {/* Participants bar */}
+            <div className="flex gap-3 overflow-x-auto pb-3">
+              {participants.filter((p) => p.name.trim()).map((p, i) => {
+                const contact = recentContacts.find((c) => c.name === p.name);
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1 shrink-0">
+                    <div className={`w-11 h-11 rounded-full border-2 p-0.5 overflow-hidden ${p.name === "You" ? "border-primary" : "border-outline-variant"}`}>
+                      {contact?.avatar ? (
+                        <img src={contact.avatar} alt={p.name} className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant">
+                          {p.name[0]?.toUpperCase() || "?"}
+                        </div>
                       )}
                     </div>
-                    <span className="text-xs text-on-surface text-center max-w-[64px] truncate">
-                      {i === 0 ? "You" : (p.name || "New")}
-                    </span>
+                    <span className="text-[10px] font-semibold text-on-surface text-center max-w-[56px] truncate">{p.name}</span>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+              <button
+                onClick={() => {
+                  const n = prompt("Add person:");
+                  if (n?.trim() && !participants.some((p) => p.name.toLowerCase() === n.trim().toLowerCase())) {
+                    setParticipants([...participants, { name: n.trim(), amount: "" }]);
+                    const newContact = { name: n.trim() };
+                    setRecentContacts([...recentContacts, newContact]);
+                    try {
+                      const contacts = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+                      if (!contacts.some((c: any) => c.name.toLowerCase() === n.trim().toLowerCase())) {
+                        contacts.push(newContact);
+                        localStorage.setItem("kongsi_contacts", JSON.stringify(contacts));
+                      }
+                    } catch {}
+                  }
+                }}
+                className="flex flex-col items-center gap-1 shrink-0 group"
+              >
+                <div className="w-11 h-11 rounded-full border-2 border-dashed border-outline-variant group-hover:border-primary flex items-center justify-center transition-colors">
+                  <span className="text-outline group-hover:text-primary text-lg leading-none">+</span>
+                </div>
+                <span className="text-[10px] font-semibold text-primary">Add</span>
+              </button>
             </div>
 
-            {/* Split Method */}
-            <div className="mb-4">
-              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Split Method</h2>
-              <div className="flex bg-surface-container-low p-1 rounded-xl">
-                <button
-                  onClick={() => setSplitMode("equal")}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${splitMode === "equal" ? "bg-surface-container-lowest shadow-[0px_2px_8px_rgba(15,23,42,0.05)] text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
-                >
-                  Split Equally
-                </button>
-                <button
-                  onClick={() => setSplitMode("custom")}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${splitMode === "custom" ? "bg-surface-container-lowest shadow-[0px_2px_8px_rgba(15,23,42,0.05)] text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
-                >
-                  Custom Amounts
-                </button>
-              </div>
+            {/* Items list */}
+            <div className="flex-1 flex flex-col gap-3 mt-4">
+              <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider ml-1">TAP AVATARS TO ASSIGN</h3>
+
+              {(() => {
+                const displayItems = lineItems.filter((li) => li.name.trim() && (parseFloat(li.amount) || 0) > 0);
+
+                if (displayItems.length === 0) {
+                  return (
+                    <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="text-sm font-semibold text-on-surface">{title || "Total"}</h4>
+                          <p className="text-[10px] text-on-surface-variant mt-0.5">
+                            Split equally among {validCount} {validCount === 1 ? "person" : "people"}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-on-surface">RM{total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    {displayItems.map((item, i) => (
+                      <div key={i} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant">
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-sm font-semibold text-on-surface">{item.name}</h4>
+                          <span className="text-sm font-semibold text-on-surface">RM{(parseFloat(item.amount) || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          {participants.filter((p) => p.name.trim()).map((p, pi) => {
+                            const contact = recentContacts.find((c) => c.name === p.name);
+                            return (
+                            <button
+                              key={pi}
+                              onClick={() => toggleItemAssignment(i, pi)}
+                              className={`w-10 h-10 rounded-full relative active:scale-95 transition-all ${
+                                (itemAssignments[i] || []).includes(pi)
+                                  ? "ring-2 ring-primary ring-offset-2 ring-offset-surface-container-lowest opacity-100"
+                                  : "opacity-50 grayscale hover:opacity-80 hover:grayscale-0"
+                              }`}
+                            >
+                              <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-xs font-bold text-on-surface-variant">
+                                {contact?.avatar ? (
+                                  <img src={contact.avatar} alt={p.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  p.name[0]?.toUpperCase() || "?"
+                                )}
+                              </div>
+                              {(itemAssignments[i] || []).includes(pi) && (
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success text-white rounded-full flex items-center justify-center border-2 border-surface-container-lowest">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              )}
+                            </button>
+                          );})}
+                        </div>
+                      </div>
+                    ))}
+
+                    {taxAndFees > 0 && (
+                      <div className="bg-success-container/10 rounded-xl p-4 border border-success/20">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="text-sm font-semibold text-on-surface">Tax & Service</h4>
+                            <p className="text-[10px] text-success font-medium mt-0.5">Distributed proportionally</p>
+                          </div>
+                          <span className="text-sm font-semibold text-on-surface">RM{taxAndFees.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="pt-4">
@@ -512,13 +583,18 @@ export default function CreateBillPage() {
               <div className="space-y-3">
                 {participants.filter((p) => p.name.trim()).map((p, i) => {
                   const amt = parseFloat(p.amount) || (total / validCount);
+                  const contact = recentContacts.find((c) => c.name === p.name);
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant flex-shrink-0">
-                        {p.name[0].toUpperCase()}
+                      <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-sm font-bold text-on-surface-variant flex-shrink-0">
+                        {contact?.avatar ? (
+                          <img src={contact.avatar} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          p.name[0].toUpperCase()
+                        )}
                       </div>
                       <span className="flex-1 text-sm font-medium text-on-surface truncate">
-                        {i === 0 ? "You" : p.name}
+                        {p.name}
                       </span>
                       <div className="relative flex items-center">
                         <span className="text-xs text-on-surface-variant mr-1">RM</span>
@@ -528,7 +604,6 @@ export default function CreateBillPage() {
                             const next = [...participants];
                             next[i] = { ...next[i], amount: e.target.value };
                             setParticipants(next);
-                            setSplitMode("custom");
                           }}
                           type="number"
                           step="0.01"

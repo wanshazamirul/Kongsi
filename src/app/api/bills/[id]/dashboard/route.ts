@@ -23,7 +23,7 @@ export async function GET(
 
     const participants = await pbGet<{ items: unknown[] }>(
       "collections/kongsi_participants/records",
-      { filter: `bill_id = "${id}"`, sort: "created", perPage: "50" }
+      { filter: `bill_id='${id}'`, sort: "created", perPage: "50" }
     );
 
     return NextResponse.json({
