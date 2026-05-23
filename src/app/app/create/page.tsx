@@ -191,7 +191,7 @@ export default function CreateBillPage() {
                   </div>
                   <Input
                     id="amount"
-                    className="block w-full pl-[72px] pr-4 py-5 bg-transparent border-none text-3xl font-bold text-on-surface focus:ring-0 placeholder:text-outline-variant rounded-xl"
+                    className="block w-full pl-[72px] pr-4 py-5 bg-transparent border-none text-3xl font-bold text-on-surface focus:ring-0 focus-visible:ring-0 placeholder:text-outline-variant rounded-xl"
                     placeholder="0.00"
                     type="number"
                     step="0.01"
@@ -258,7 +258,7 @@ export default function CreateBillPage() {
                           value={li.name}
                           onChange={(e) => updateLineItem(i, "name", e.target.value)}
                           placeholder="Item name"
-                          className="flex-1 px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline-variant transition-all"
+                          className="flex-1 px-4 py-3 h-auto bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-outline-variant transition-all"
                         />
                         <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant rounded-xl focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
                           <span className="pl-3 text-xs text-on-surface-variant">RM</span>
@@ -269,7 +269,7 @@ export default function CreateBillPage() {
                             type="number"
                             step="0.01"
                             min="0"
-                            className="w-24 border-0 bg-transparent focus:ring-0 py-3 pr-3 pl-1 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
+                            className="w-24 border-0 bg-transparent focus:ring-0 focus-visible:ring-0 py-3 pr-3 pl-1 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
                           />
                         </div>
                         <button onClick={() => removeLineItem(i)} className="p-2 text-on-surface-variant/40 hover:text-destructive transition-colors flex-shrink-0">
@@ -311,7 +311,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-6 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 Next <span className="ml-2">→</span>
               </Button>
@@ -443,7 +443,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-6 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 Review <span className="ml-2">→</span>
               </Button>
@@ -571,7 +571,7 @@ export default function CreateBillPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full flex items-center justify-center py-5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
+                className="w-full flex items-center justify-center py-6 bg-primary text-primary-foreground rounded-xl text-lg font-semibold shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-sm transition-all"
               >
                 {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Bill & Share"}
               </Button>
