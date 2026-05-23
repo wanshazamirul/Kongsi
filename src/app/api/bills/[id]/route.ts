@@ -12,10 +12,12 @@ export async function GET(
     const bill = await pbGet<{ id: string; title: string; total_amount: number; description: string; due_date: string; created: string }>(`collections/kongsi_bills/records/${id}`).catch(() => null);
     if (!bill) return NextResponse.json({ error: "Bill not found" }, { status: 404 });
 
-    const participants = await pbGet<{ items: unknown[] }>(
+    const participants = await pbGet<{ items: Array<{ bill_id: string }> }>(
       "collections/kongsi_participants/records",
-      { filter: `bill_id='${id}'`, sort: "created", perPage: "50" }
+      { sort: "created", perPage: "100" }
     );
+
+    const filtered = participants.items.filter((p) => p.bill_id === id);
 
     return NextResponse.json({
       id: bill.id,
@@ -24,7 +26,7 @@ export async function GET(
       description: bill.description,
       due_date: bill.due_date,
       created: bill.created,
-      participants: participants.items,
+      participants: filtered,
     });
   } catch (err) {
     return NextResponse.json({ error: safeError(err) }, { status: 500 });

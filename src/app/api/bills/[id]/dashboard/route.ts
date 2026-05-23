@@ -21,10 +21,12 @@ export async function GET(
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
     }
 
-    const participants = await pbGet<{ items: unknown[] }>(
+    const participants = await pbGet<{ items: Array<{ bill_id: string }> }>(
       "collections/kongsi_participants/records",
-      { filter: `bill_id='${id}'`, sort: "created", perPage: "50" }
+      { sort: "created", perPage: "100" }
     );
+
+    const filtered = participants.items.filter((p) => p.bill_id === id);
 
     return NextResponse.json({
       id: bill.id,
@@ -34,7 +36,7 @@ export async function GET(
       due_date: bill.due_date,
       created: bill.created,
       admin_token: bill.admin_token,
-      participants: participants.items,
+      participants: filtered,
     });
   } catch (err) {
     return NextResponse.json({ error: safeError(err) }, { status: 500 });

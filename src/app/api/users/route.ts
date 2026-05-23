@@ -11,11 +11,12 @@ export async function POST(req: Request) {
     // Check if user already exists
     const existing = await pbGet<{ items: { id: string; name: string; device_id: string }[] }>(
       `collections/kongsi_users/records`,
-      { filter: `device_id='${device_id}'` },
+      { perPage: "100" },
     ).catch(() => null);
 
-    if (existing && existing.items.length > 0) {
-      const user = existing.items[0];
+    const foundUser = existing?.items.find((u) => u.device_id === device_id);
+    if (foundUser) {
+      const user = foundUser;
       if (user.name !== name.trim()) {
         await pbPost(`collections/kongsi_users/records/${user.id}`, { name: name.trim() });
       }
@@ -42,11 +43,11 @@ export async function GET(req: Request) {
   try {
     const result = await pbGet<{ items: { id: string; name: string; device_id: string; avatar?: string }[] }>(
       `collections/kongsi_users/records`,
-      { filter: `device_id='${deviceId}'` },
+      { perPage: "100" },
     );
-    if (result.items.length > 0) {
-      const u = result.items[0];
-      return NextResponse.json({ user: { id: u.id, name: u.name, device_id: u.device_id, avatar: u.avatar } });
+    const user = result.items.find((u) => u.device_id === deviceId);
+    if (user) {
+      return NextResponse.json({ user: { id: user.id, name: user.name, device_id: user.device_id, avatar: user.avatar } });
     }
     return NextResponse.json({ user: null });
   } catch {
