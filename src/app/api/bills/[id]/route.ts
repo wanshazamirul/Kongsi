@@ -14,7 +14,7 @@ export async function GET(
 
     const participants = await pbGet<{ items: Array<{ bill_id: string }> }>(
       "collections/kongsi_participants/records",
-      { sort: "created", perPage: "100" }
+      { perPage: "100" }
     );
 
     const filtered = participants.items.filter((p) => p.bill_id === id);
