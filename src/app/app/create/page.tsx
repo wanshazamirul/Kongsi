@@ -118,13 +118,18 @@ export default function CreateBillPage() {
         return { ...p, amount: amt > 0 ? amt.toFixed(2) : "0.00" };
       });
 
-      // Fix rounding: ensure sum matches total
+      // Fix rounding: apply diff to participant with largest amount
       const partsSum = updated.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
       const diff = Math.round((total - partsSum) * 100) / 100;
-      if (diff !== 0 && updated.length > 0) {
-        const firstValid = updated.findIndex((p) => p.name.trim());
-        if (firstValid >= 0) {
-          updated[firstValid].amount = ((parseFloat(updated[firstValid].amount) || 0) + diff).toFixed(2);
+      if (diff !== 0) {
+        let maxIdx = -1;
+        let maxAmt = -1;
+        updated.forEach((p, pi) => {
+          const amt = parseFloat(p.amount) || 0;
+          if (p.name.trim() && amt > maxAmt) { maxAmt = amt; maxIdx = pi; }
+        });
+        if (maxIdx >= 0) {
+          updated[maxIdx].amount = (maxAmt + diff).toFixed(2);
         }
       }
 
@@ -394,7 +399,7 @@ export default function CreateBillPage() {
                 const contact = recentContacts.find((c) => c.name === p.name);
                 return (
                   <div key={i} className="flex flex-col items-center gap-1 shrink-0">
-                    <div className={`w-11 h-11 rounded-full border-2 p-0.5 overflow-hidden ${p.name === "You" ? "border-primary" : "border-outline-variant"}`}>
+                    <div className="w-11 h-11 rounded-full border-2 p-0.5 overflow-hidden border-outline-variant">
                       {contact?.avatar ? (
                         <img src={contact.avatar} alt={p.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
@@ -553,12 +558,23 @@ export default function CreateBillPage() {
               <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] mb-4">
                 <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Line Items</h3>
                 <div className="space-y-1.5">
-                  {lineItems.filter(li => li.name.trim()).map((li, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-on-surface">{li.name}</span>
-                      <span className="text-on-surface-variant">RM{(parseFloat(li.amount) || 0).toFixed(2)}</span>
+                  {lineItems.filter(li => li.name.trim()).map((li, i) => {
+                    const assigned = itemAssignments[i] || [];
+                    const assignees = assigned.length > 0
+                      ? assigned.map((pi) => participants[pi]?.name || "?").join(", ")
+                      : null;
+                    return (
+                    <div key={i}>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-on-surface">{li.name}</span>
+                        <span className="text-on-surface-variant">RM{(parseFloat(li.amount) || 0).toFixed(2)}</span>
+                      </div>
+                      <p className="text-[10px] text-on-surface-variant mt-0.5">
+                        {assignees ? `Split by: ${assignees}` : "Split equally"}
+                      </p>
                     </div>
-                  ))}
+                    );
+                  })}
                   {lineItems.filter(li => li.name.trim()).length > 0 && (
                     <>
                       <div className="flex justify-between text-xs text-on-surface-variant border-t border-outline-variant pt-1.5 mt-1">
