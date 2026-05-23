@@ -4,6 +4,19 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Receipt, Lock, UserPlus } from "lucide-react";
 import { getDeviceId } from "@/lib/device-id";
+
+function useContactAvatars() {
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try {
+      const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      const map: Record<string, string> = {};
+      contacts.forEach((c) => { if (c.avatar) map[c.name] = c.avatar; });
+      setAvatars(map);
+    } catch {}
+  }, []);
+  return avatars;
+}
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ConfettiBurst } from "@/components/confetti-burst";
@@ -33,6 +46,7 @@ export default function PublicBillPage() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const contactAvatars = useContactAvatars();
   const [showAllPaid, setShowAllPaid] = useState(false);
   const [paid, setPaid] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
@@ -149,8 +163,12 @@ export default function PublicBillPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-container/20 text-primary flex items-center justify-center text-sm font-semibold">
-                      {p.name[0].toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-primary-container/20 text-primary flex items-center justify-center overflow-hidden text-sm font-semibold">
+                      {contactAvatars[p.name] ? (
+                        <img src={contactAvatars[p.name]} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        p.name[0].toUpperCase()
+                      )}
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-on-surface">{p.name}</span>

@@ -9,6 +9,19 @@ import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
 import { TopBar } from "@/components/top-bar";
 
+function useContactAvatars() {
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try {
+      const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      const map: Record<string, string> = {};
+      contacts.forEach((c) => { if (c.avatar) map[c.name] = c.avatar; });
+      setAvatars(map);
+    } catch {}
+  }, []);
+  return avatars;
+}
+
 interface Participant {
   id: string;
   name: string;
@@ -37,6 +50,7 @@ function DashboardContent() {
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const contactAvatars = useContactAvatars();
   const [tab, setTab] = useState<"unpaid" | "paid">("unpaid");
 
   useEffect(() => {
@@ -183,8 +197,12 @@ function DashboardContent() {
                 >
                   <div className="bg-surface-container-lowest rounded-xl p-3 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-lg">
-                        {p.name[0].toUpperCase()}
+                      <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-on-surface-variant font-bold text-lg">
+                        {contactAvatars[p.name] ? (
+                          <img src={contactAvatars[p.name]} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          p.name[0].toUpperCase()
+                        )}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-on-surface">{p.name}</span>
