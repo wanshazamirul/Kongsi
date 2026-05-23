@@ -73,20 +73,22 @@ export default function AppHomePage() {
         if (r.status === "fulfilled" && r.value) {
           const data = r.value;
           const participants: Participant[] = data.participants || [];
-          const paidTotal = participants.reduce(
+          const youParticipant = participants.find((p: Participant) => p.name === "You");
+          const others = youParticipant ? participants.filter((p: Participant) => p.name !== "You") : participants;
+          const paidTotal = others.reduce(
             (s: number, p: Participant) => s + (p.paid ? p.amount : 0),
             0
           );
-          const total = participants.reduce(
+          const total = others.reduce(
             (s: number, p: Participant) => s + p.amount,
             0
           );
           stats[bills[i].id] = {
             billId: bills[i].id,
             paid: paidTotal,
-            total: total || bills[i].total_amount,
-            participantCount: participants.length,
-            paidCount: participants.filter((p: Participant) => p.paid).length,
+            total: total || (bills[i].total_amount - (youParticipant?.amount || 0)),
+            participantCount: others.length,
+            paidCount: others.filter((p: Participant) => p.paid).length,
           };
         }
       });
@@ -152,13 +154,13 @@ export default function AppHomePage() {
       <TopBar />
       <div className="max-w-3xl mx-auto px-5 flex flex-col gap-8 pt-2">
         {/* Total Outstanding Bento Card — inverted: dark bg in light mode */}
-        <section className="relative rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden bg-slate-900 dark:bg-surface-container-lowest shadow-[0px_4px_24px_rgba(15,23,42,0.15)] dark:shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
+        <section className="relative rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden bg-slate-900 dark:bg-white shadow-[0px_4px_24px_rgba(15,23,42,0.15)] dark:shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
           {/* Decorative background blobs */}
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/30 rounded-full blur-2xl" />
           <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl" />
 
           <div className="flex flex-col gap-3 z-10 w-full md:w-auto text-center md:text-left">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-on-surface-variant">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Total Outstanding
             </h2>
             <p className="text-5xl font-bold tracking-[-0.02em] text-white dark:text-primary">
