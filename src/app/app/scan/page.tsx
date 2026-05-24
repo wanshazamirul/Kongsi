@@ -307,7 +307,7 @@ function ScanPageContent() {
 
   // Split Items view
   return (
-    <div className="text-on-surface antialiased pb-32">
+    <div className="min-h-screen flex flex-col text-on-surface antialiased">
       <TopBar
           title="Split Items"
           showBack
@@ -317,7 +317,7 @@ function ScanPageContent() {
           }}
         />
 
-      <main className="px-5 pt-3 flex flex-col gap-6">
+      <main className="flex-1 overflow-y-auto px-5 pt-3 flex flex-col gap-6 pb-4">
         {/* Receipt card — click to edit title */}
         <button
           onClick={() => {
@@ -432,7 +432,7 @@ function ScanPageContent() {
         </section>
       </main>
 
-      <div className="fixed bottom-16 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50">
+      <div className="sticky bottom-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50 mt-auto">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase">YOUR TOTAL</p>
