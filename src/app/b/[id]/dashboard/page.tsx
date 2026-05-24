@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon } from "lucide-react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon, Home } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ interface Bill {
 }
 
 function DashboardContent() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -199,7 +200,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen pb-24">
-      <TopBar />
+      <TopBar showBack onBack={() => router.push("/app")} />
 
       <main className="max-w-2xl mx-auto px-5 pb-8 flex flex-col gap-8">
         {/* Title */}
@@ -394,6 +395,17 @@ function DashboardContent() {
           </div>
         )}
       </main>
+
+      {/* Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest border-t border-outline-variant px-4 py-3 flex justify-center">
+        <button
+          onClick={() => router.push("/app")}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
+        >
+          <Home className="w-4 h-4" />
+          Back to Bills
+        </button>
+      </nav>
     </div>
   );
 }

@@ -68,74 +68,23 @@ export default function CreateBillPage() {
   }
 
   function handleNext() {
-    if (step === 0) {
-      setStep(1);
-    } else if (step === 1) {
-      // Calculate per-person totals from item assignments
-      const valid = participants.filter((p) => p.name.trim());
-      const itemsToSplit = lineItems.filter((li) => li.name.trim() && (parseFloat(li.amount) || 0) > 0);
-      const hasLineItems = itemsToSplit.length > 0;
+    // Step 1 → save items and redirect to unified split page
+    const splitItems = lineItems
+      .filter((li) => li.name.trim() && (parseFloat(li.amount) || 0) > 0)
+      .map((li) => ({ name: li.name.trim(), amount: parseFloat(li.amount) || 0 }));
 
-      const personTotals: number[] = new Array(participants.length).fill(0);
+    // If no line items, create single total item
+    const items = splitItems.length > 0
+      ? splitItems
+      : [{ name: title.trim() || "Total", amount: total }];
 
-      if (hasLineItems) {
-        itemsToSplit.forEach((item, i) => {
-          const itemAmount = parseFloat(item.amount) || 0;
-          const assigned = itemAssignments[i];
-          if (assigned && assigned.length > 0) {
-            const perPerson = itemAmount / assigned.length;
-            assigned.forEach((pi) => {
-              personTotals[pi] = (personTotals[pi] || 0) + perPerson;
-            });
-          } else {
-            const perPerson = valid.length > 0 ? itemAmount / valid.length : 0;
-            valid.forEach((_, pi) => {
-              personTotals[pi] = (personTotals[pi] || 0) + perPerson;
-            });
-          }
-        });
+    sessionStorage.setItem("kongsi_manual_items", JSON.stringify({
+      title: title.trim() || "Manual Bill",
+      items,
+      total,
+    }));
 
-        // Distribute tax proportionally
-        const taxAmount = total - itemsSubtotal;
-        if (taxAmount > 0 && itemsSubtotal > 0) {
-          valid.forEach((_, pi) => {
-            const proportion = personTotals[pi] / itemsSubtotal;
-            personTotals[pi] += taxAmount * proportion;
-          });
-        }
-      } else {
-        // No line items — split total equally
-        const perPerson = total / valid.length;
-        valid.forEach((_, pi) => {
-          personTotals[pi] = perPerson;
-        });
-      }
-
-      // Set participant amounts
-      const updated = participants.map((p, pi) => {
-        if (!p.name.trim()) return p;
-        const amt = personTotals[pi] || 0;
-        return { ...p, amount: amt > 0 ? amt.toFixed(2) : "0.00" };
-      });
-
-      // Fix rounding: apply diff to participant with largest amount
-      const partsSum = updated.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-      const diff = Math.round((total - partsSum) * 100) / 100;
-      if (diff !== 0) {
-        let maxIdx = -1;
-        let maxAmt = -1;
-        updated.forEach((p, pi) => {
-          const amt = parseFloat(p.amount) || 0;
-          if (p.name.trim() && amt > maxAmt) { maxAmt = amt; maxIdx = pi; }
-        });
-        if (maxIdx >= 0) {
-          updated[maxIdx].amount = (maxAmt + diff).toFixed(2);
-        }
-      }
-
-      setParticipants(updated);
-      setStep(2);
-    }
+    router.push("/app/scan?mode=manual");
   }
 
   async function handleSubmit() {

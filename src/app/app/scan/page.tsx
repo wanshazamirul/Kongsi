@@ -36,6 +36,7 @@ function ScanPageContent() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [isManual, setIsManual] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
   const [participants, setParticipants] = useState<Participant[]>(() => {
@@ -47,7 +48,36 @@ function ScanPageContent() {
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
 
+  // Avatar lookup from localStorage contacts
+  function getAvatar(name: string): string | undefined {
+    if (name === "You") {
+      try {
+        const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+        const you = contacts.find((c) => c.name === "You");
+        if (you?.avatar) return you.avatar;
+      } catch {}
+      return localStorage.getItem("kongsi_avatar") || undefined;
+    }
+    try {
+      const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+      return contacts.find((c) => c.name === name)?.avatar;
+    } catch { return undefined; }
+  }
+
   useEffect(() => {
+    // Manual mode: load items from sessionStorage
+    const manualData = sessionStorage.getItem("kongsi_manual_items");
+    if (manualData) {
+      try {
+        const parsed = JSON.parse(manualData);
+        setTitle(parsed.title || "Manual Bill");
+        setItems(parsed.items || []);
+        setIsManual(true);
+      } catch {}
+      sessionStorage.removeItem("kongsi_manual_items");
+      return;
+    }
+
     const stored = sessionStorage.getItem("kongsi_scan_image");
     if (stored) {
       sessionStorage.removeItem("kongsi_scan_image");
@@ -141,16 +171,17 @@ function ScanPageContent() {
       name: p.name.trim(),
       amount: Math.round((personTotals[pi] || total / validParticipants.length) * 100) / 100,
     }));
-    // Fix rounding: add remainder to first participant
+    // Fix rounding: add remainder to participant with largest amount
     const partsSum = parts.reduce((s, p) => s + p.amount, 0);
     const diff = Math.round((total - partsSum) * 100) / 100;
     if (diff !== 0 && parts.length > 0) {
-      parts[0].amount = Math.round((parts[0].amount + diff) * 100) / 100;
+      let maxIdx = 0; let maxAmt = 0;
+      parts.forEach((p, pi) => { if (p.amount > maxAmt) { maxAmt = p.amount; maxIdx = pi; } });
+      parts[maxIdx].amount = Math.round((parts[maxIdx].amount + diff) * 100) / 100;
     }
-    // Ensure no zero/negative amounts
     const safeParts = parts.map((p) => ({
       ...p,
-      amount: p.amount <= 0 ? 0.01 : p.amount,
+      amount: p.amount <= 0 ? 0.01 : Math.round(p.amount * 100) / 100,
     }));
 
     const res = await fetch("/api/bills", {
@@ -170,6 +201,17 @@ function ScanPageContent() {
         const bills = stored ? JSON.parse(stored) : [];
         bills.unshift({ id: data.id, title: title.trim(), total_amount: Math.round(total * 100) / 100, created: new Date().toISOString(), admin_token: data.admin_token });
         localStorage.setItem("kongsi_bills", JSON.stringify(bills.slice(0, 20)));
+        // Save contacts preserving avatars
+        try {
+          const existingContacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
+          const contactMap = new Map(existingContacts.map((c) => [c.name, c]));
+          safeParts.forEach((p) => {
+            if (p.name !== "You" && !contactMap.has(p.name)) {
+              contactMap.set(p.name, { name: p.name });
+            }
+          });
+          localStorage.setItem("kongsi_contacts", JSON.stringify(Array.from(contactMap.values())));
+        } catch {}
       } catch {}
       router.push(`/b/${data.id}/dashboard?token=${data.admin_token}&created=true`);
     } else {
@@ -249,25 +291,31 @@ function ScanPageContent() {
     );
   }
 
+  const youIndex = validParticipants.findIndex((p) => p.name === "You");
   const myTotal = validParticipants.length > 0
     ? items.filter((_, i) => !isFeeItem(items[i].name)).reduce((sum, item, i) => {
-        const origIdx = items.indexOf(item);
-        const assigned = itemAssignments[origIdx];
-        if (assigned === 0) return sum + item.amount;
+        const assigned = itemAssignments[i];
+        if (assigned === youIndex && youIndex >= 0) return sum + item.amount;
         if (assigned === undefined) return sum + item.amount / validParticipants.length;
+        if (assigned === youIndex) return sum + item.amount;
         return sum;
       }, 0)
     : 0;
-  const assignedTotal = items.reduce((sum, item, i) => {
-    if (itemAssignments[i] !== undefined) return sum + item.amount;
-    return sum;
-  }, 0);
-  const leftToAssign = total - assignedTotal;
+  const unassignedCount = items.filter((_, i) => itemAssignments[i] === undefined).length;
+  const leftToAssign = items.filter((item, i) => itemAssignments[i] === undefined)
+    .reduce((s, item) => s + item.amount, 0);
 
   // Split Items view
   return (
     <div className="text-on-surface antialiased pb-32">
-      <TopBar title="Split Items" showBack onBack={() => { setImage(null); setItems([]); }} />
+      <TopBar
+          title="Split Items"
+          showBack
+          onBack={() => {
+            if (isManual) router.push("/app/create");
+            else { setImage(null); setItems([]); }
+          }}
+        />
 
       <main className="px-5 pt-3 flex flex-col gap-6">
         {/* Receipt card — click to edit title */}
@@ -295,11 +343,13 @@ function ScanPageContent() {
 
         {/* Participants legend + Add button */}
         <section className="flex gap-3 overflow-x-auto pb-1">
-          {validParticipants.map((p, i) => (
+          {validParticipants.map((p, i) => {
+            const pAvatar = p.avatar || getAvatar(p.name);
+            return (
             <div key={i} className="flex flex-col items-center gap-1 shrink-0">
-              <div className={`w-10 h-10 rounded-full border-2 p-0.5 overflow-hidden ${i === 0 ? "border-primary" : "border-outline-variant"}`}>
-                {p.avatar ? (
-                  <img src={p.avatar} alt={p.name} className="w-full h-full rounded-full object-cover" />
+              <div className="w-10 h-10 rounded-full border-2 p-0.5 overflow-hidden border-outline-variant">
+                {pAvatar ? (
+                  <img src={pAvatar} alt={p.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-sm font-bold text-on-surface-variant">
                     {p.name[0]?.toUpperCase() || "?"}
@@ -308,7 +358,7 @@ function ScanPageContent() {
               </div>
               <span className="text-[10px] font-semibold text-on-surface">{p.name}</span>
             </div>
-          ))}
+          );})}
           <button
             onClick={() => {
               const n = prompt("Add person:");
@@ -348,7 +398,9 @@ function ScanPageContent() {
               </div>
               {!isFee && (
                 <div className="flex gap-2">
-                  {validParticipants.map((p, pi) => (
+                  {validParticipants.map((p, pi) => {
+                    const pAvatar = p.avatar || getAvatar(p.name);
+                    return (
                     <button
                       key={pi}
                       onClick={() => toggleItemAssignment(i, pi)}
@@ -358,8 +410,12 @@ function ScanPageContent() {
                           : "opacity-50 grayscale hover:opacity-80 hover:grayscale-0"
                       }`}
                     >
-                      <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">
-                        {p.name[0]?.toUpperCase() || "?"}
+                      <div className="w-full h-full rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden text-xs font-bold text-on-surface-variant">
+                        {pAvatar ? (
+                          <img src={pAvatar} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          p.name[0]?.toUpperCase() || "?"
+                        )}
                       </div>
                       {itemAssignments[i] === pi && (
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success text-on-success-container rounded-full flex items-center justify-center border-2 border-surface-container-lowest">
@@ -367,7 +423,7 @@ function ScanPageContent() {
                         </div>
                       )}
                     </button>
-                  ))}
+                  );})}
                 </div>
               )}
             </div>
