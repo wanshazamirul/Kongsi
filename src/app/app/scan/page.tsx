@@ -292,17 +292,13 @@ function ScanPageContent() {
   }
 
   const youIndex = validParticipants.findIndex((p) => p.name === "You");
-  const myTotal = validParticipants.length > 0
-    ? items.filter((_, i) => !isFeeItem(items[i].name)).reduce((sum, item, i) => {
-        const assigned = itemAssignments[i];
-        if (assigned === youIndex && youIndex >= 0) return sum + item.amount;
-        if (assigned === undefined) return sum + item.amount / validParticipants.length;
-        if (assigned === youIndex) return sum + item.amount;
+  const myTotal = youIndex >= 0
+    ? items.reduce((sum, item, i) => {
+        if (itemAssignments[i] === youIndex) return sum + item.amount;
         return sum;
       }, 0)
     : 0;
-  const unassignedCount = items.filter((_, i) => itemAssignments[i] === undefined).length;
-  const leftToAssign = items.filter((item, i) => itemAssignments[i] === undefined)
+  const leftToAssign = items.filter((_, i) => itemAssignments[i] === undefined)
     .reduce((s, item) => s + item.amount, 0);
 
   // Split Items view
