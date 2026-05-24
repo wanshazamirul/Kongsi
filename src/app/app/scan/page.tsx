@@ -428,7 +428,7 @@ function ScanPageContent() {
         </section>
       </main>
 
-      <div className="sticky bottom-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50 mt-auto">
+      <div className="w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(15,23,42,0.1)] rounded-t-xl px-5 py-4 z-50 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-[10px] font-semibold text-on-surface-variant uppercase">YOUR TOTAL</p>
