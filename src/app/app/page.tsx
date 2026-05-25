@@ -50,11 +50,21 @@ export default function AppHomePage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Load bills from localStorage — on mount + when page becomes visible
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("kongsi_bills");
-      if (stored) setBills(JSON.parse(stored));
-    } catch {}
+    function loadBills() {
+      try {
+        const stored = localStorage.getItem("kongsi_bills");
+        if (stored) setBills(JSON.parse(stored));
+      } catch {}
+    }
+    loadBills();
+    document.addEventListener("visibilitychange", loadBills);
+    window.addEventListener("focus", loadBills);
+    return () => {
+      document.removeEventListener("visibilitychange", loadBills);
+      window.removeEventListener("focus", loadBills);
+    };
   }, []);
 
   // Fetch participant data for all bills to compute paid vs remaining
