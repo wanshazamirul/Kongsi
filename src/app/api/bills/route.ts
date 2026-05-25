@@ -2,6 +2,7 @@ import { safeError } from "@/lib/safe-error";
 import { NextResponse } from "next/server";
 import { pbPost } from "@/lib/pb-server";
 import { generateToken } from "@/lib/utils";
+import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const createBillSchema = z.object({
@@ -25,6 +26,11 @@ const createBillSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    if (rateLimit(`create:${ip}`, 10, 60_000)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await request.json();
     const parsed = createBillSchema.parse(body);
 

@@ -43,6 +43,21 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const { admin_token } = await request.json();
+
+    if (!admin_token) {
+      return NextResponse.json({ error: "Missing admin token" }, { status: 400 });
+    }
+
+    const bill = await pbGet<{ admin_token: string }>(
+      `collections/kongsi_bills/records/${id}`
+    ).catch(() => null);
+
+    if (!bill) return NextResponse.json({ error: "Bill not found" }, { status: 404 });
+    if (admin_token !== bill.admin_token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     await pbDelete(`collections/kongsi_bills/records/${id}`);
     return NextResponse.json({ success: true });
   } catch (err) {

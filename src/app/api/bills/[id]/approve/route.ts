@@ -1,12 +1,18 @@
 import { safeError } from "@/lib/safe-error";
 import { NextResponse } from "next/server";
 import { pbGet, pbPatch } from "@/lib/pb-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    if (rateLimit(`approve:${ip}`, 20, 60_000)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { id } = await params;
     const { participant_id, admin_token } = await request.json();
 

@@ -39,7 +39,12 @@ export default function BillsPage() {
     if (!deleteId) return;
     setDeleting(true);
     try {
-      await fetch(`/api/bills/${deleteId}`, { method: "DELETE" }).catch(() => {});
+      const bill = bills.find((b) => b.id === deleteId);
+      await fetch(`/api/bills/${deleteId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ admin_token: bill?.admin_token || "" }),
+      }).catch(() => {});
       const updated = bills.filter((b) => b.id !== deleteId);
       setBills(updated);
       localStorage.setItem("kongsi_bills", JSON.stringify(updated));
