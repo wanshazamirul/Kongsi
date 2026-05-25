@@ -126,7 +126,14 @@ export default function CreateBillPage() {
         total_amount: Math.round(total * 100) / 100,
         description: description.trim(),
         participants: parsed.map((p) => ({ name: p.name, amount: Math.round(p.amount * 100) / 100 })),
-        line_items: lineItems.filter((li) => li.name.trim()).map((li) => ({ name: li.name.trim(), amount: parseFloat(li.amount) || 0 })),
+        line_items: lineItems.filter((li) => li.name.trim()).map((li, i) => {
+          const assigned = itemAssignments[i] || [];
+          const all = allParticipants().filter((p) => p.name.trim());
+          const paidBy = assigned.length > 0
+            ? assigned.map((pi) => all[pi]?.name || "Unknown")
+            : all.map((p) => p.name);
+          return { name: li.name.trim(), amount: parseFloat(li.amount) || 0, paidBy };
+        }),
       }),
     });
 
