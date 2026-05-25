@@ -179,12 +179,23 @@ function PayPageContent() {
             <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
               <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Your items</h2>
               <div className="space-y-1">
-                {yourItems.map((li, i) => (
-                  <div key={i} className="flex justify-between text-sm">
-                    <span className="text-on-surface">{li.name}</span>
-                    <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
-                  </div>
-                ))}
+                {yourItems.map((li, i) => {
+                  const splitCount = li.paidBy?.length || 1;
+                  const share = li.amount / splitCount;
+                  return (
+                    <div key={i} className="flex justify-between text-sm">
+                      <div>
+                        <span className="text-on-surface">{li.name}</span>
+                        {splitCount > 1 && (
+                          <p className="text-[10px] text-on-surface-variant mt-0.5">
+                            Split {splitCount} ways
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-on-surface-variant">RM{share.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
                 <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
                   <span className="text-on-surface">Your total</span>
                   <span className="text-primary">RM{p.amount.toFixed(2)}</span>
