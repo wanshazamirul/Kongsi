@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Loader2, Receipt, Upload, Check, ArrowUpToLine } from "lucide-react";
+import { Loader2, Receipt, Upload, Check, ArrowUpToLine, Download } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { toast } from "sonner";
 import { convertToWebP } from "@/lib/image-utils";
@@ -224,8 +224,16 @@ function PayPageContent() {
               alt="Payment QR"
               className="max-w-[240px] mx-auto rounded-lg"
             />
+            <a
+              href={bill.admin_qr}
+              download="payment-qr.jpg"
+              className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download QR
+            </a>
             <p className="text-[10px] text-on-surface-variant mt-2">
-              Screenshot this QR and scan with your bank app
+              Download and scan with your bank app
             </p>
           </div>
         ) : (
