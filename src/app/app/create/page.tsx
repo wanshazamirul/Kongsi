@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Loader2, X, Check } from "lucide-react";
+import { Plus, Loader2, X, Check, Calendar } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -267,14 +267,19 @@ export default function CreateBillPage() {
               {/* Due Date */}
               <div>
                 <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2" htmlFor="due_date">Due Date (Optional)</label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  className="block w-full px-4 py-5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary shadow-[0px_4px_20px_rgba(15,23,42,0.05)] placeholder:text-outline-variant transition-all"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                />
+                <div className="relative flex items-center bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_20px_rgba(15,23,42,0.05)] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Calendar className="w-5 h-5 text-on-surface-variant" />
+                  </div>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    className="block w-full pl-[52px] pr-4 py-5 bg-transparent border-none text-sm text-on-surface focus:ring-0 focus-visible:ring-0 placeholder:text-outline-variant rounded-xl"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                </div>
               </div>
 
               {/* ─── Line Items ─── */}

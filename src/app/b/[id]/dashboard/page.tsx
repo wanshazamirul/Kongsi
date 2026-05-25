@@ -264,6 +264,7 @@ function DashboardContent() {
   const othersTotal = others.reduce((s, p) => s + p.amount, 0);
   const progress = othersTotal > 0 ? (totalPaid / othersTotal) * 100 : 0;
   const allPaid = paidParticipants.length === others.length;
+  const pastDue = bill.due_date && new Date(bill.due_date) < new Date() && !allPaid;
   const displayParticipants = tab === "unpaid" ? unpaidParticipants : tab === "pending" ? pendingParticipants : paidParticipants;
   // Full list for display (includes You in appropriate tab)
   const fullUnpaid = bill.participants.filter((p) => !p.paid && p.status !== "pending");
@@ -277,8 +278,15 @@ function DashboardContent() {
 
       <main className="max-w-2xl mx-auto px-5 pb-8 flex flex-col gap-8">
         {/* Title */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>
+        <section className={`flex flex-col gap-3 ${pastDue ? "p-3 rounded-xl border border-destructive/30 bg-destructive/5" : ""}`}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>
+            {pastDue && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/10 text-destructive">
+                Overdue
+              </span>
+            )}
+          </div>
           {bill.description && (
             <p className="text-sm text-on-surface-variant">{bill.description}</p>
           )}
@@ -288,7 +296,7 @@ function DashboardContent() {
               Organized by You
             </p>
             {bill.due_date && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pastDue ? "bg-destructive/10 text-destructive" : "bg-surface-container-high text-on-surface-variant"}`}>
                 Due {new Date(bill.due_date).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
               </span>
             )}

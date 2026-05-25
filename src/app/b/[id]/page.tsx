@@ -147,6 +147,7 @@ export default function PublicBillPage() {
   }
 
   const allPaid = bill.participants.every((p) => p.paid);
+  const pastDue = bill.due_date && new Date(bill.due_date) < new Date() && !allPaid;
   const firstUnpaid = bill.participants.find((p) => !p.paid);
   const organizerName = bill.participants[0]?.name || "Someone";
 
@@ -165,25 +166,30 @@ export default function PublicBillPage() {
         {/* Payment Card — Glassmorphism + Tonal Layering */}
         <article className="w-full bg-surface-container-lowest/90 backdrop-blur-xl rounded-[24px] shadow-[0px_10px_30px_rgba(15,23,42,0.1)] overflow-hidden border border-white/20">
           {/* Hero Section */}
-          <div className="p-8 flex flex-col items-center text-center border-b border-outline-variant">
-            <div className="w-20 h-20 rounded-full overflow-hidden mb-4 shadow-sm border-2 border-surface flex items-center justify-center bg-surface-container-high">
-              <Receipt className="w-10 h-10 text-primary" />
+          <div className={`p-8 flex flex-col items-center text-center border-b ${pastDue ? "border-destructive/30 bg-destructive/5" : "border-outline-variant"}`}>
+            <div className={`w-20 h-20 rounded-full overflow-hidden mb-4 shadow-sm border-2 flex items-center justify-center ${pastDue ? "border-destructive/20 bg-destructive/5" : "border-surface bg-surface-container-high"}`}>
+              <Receipt className={`w-10 h-10 ${pastDue ? "text-destructive" : "text-primary"}`} />
             </div>
             <h1 className="text-sm text-on-surface-variant mb-1">
               <strong className="text-on-surface font-semibold">{organizerName}</strong> invited you to pay for
             </h1>
             <h1 className="text-xl font-bold text-on-surface mt-1">{bill.title}</h1>
+            {pastDue && (
+              <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/10 text-destructive">
+                Overdue
+              </span>
+            )}
             {bill.description && (
               <p className="text-xs text-on-surface-variant mt-2 max-w-xs">{bill.description}</p>
             )}
             {bill.due_date && (
-              <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">
+              <span className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pastDue ? "bg-destructive/10 text-destructive" : "bg-surface-container-high text-on-surface-variant"}`}>
                 Due {new Date(bill.due_date).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
               </span>
             )}
             <div className="mt-6">
               <span className="text-xs text-on-surface-variant uppercase tracking-wider block mb-2">Amount Due</span>
-              <div className="text-5xl font-bold text-primary tracking-[-0.02em]">
+              <div className={`text-5xl font-bold tracking-[-0.02em] ${pastDue ? "text-destructive" : "text-primary"}`}>
                 RM{bill.total_amount.toFixed(2)}
               </div>
             </div>

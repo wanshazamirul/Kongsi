@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, Loader2, Receipt, X, Check, ImageIcon } from "lucide-react";
+import { Camera, Loader2, Receipt, X, Check, ImageIcon, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -397,22 +397,32 @@ function ScanPageContent() {
           </div>
         </button>
 
-        {/* Description + Due Date — collapsible extra fields */}
+        {/* Description + Due Date */}
         <div className="flex flex-col gap-2">
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add a note (optional)"
-            maxLength={500}
-            className="w-full text-xs bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-          />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            min={new Date().toISOString().split("T")[0]}
-            className="w-full text-xs bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-          />
+          <div className="relative flex items-center bg-surface-container-lowest rounded-xl border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <FileText className="w-4 h-4 text-on-surface-variant/60" />
+            </div>
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a note (optional)"
+              maxLength={500}
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-transparent border-none text-on-surface placeholder:text-on-surface-variant/40 focus:ring-0 outline-none rounded-xl"
+            />
+          </div>
+          <div className="relative flex items-center bg-surface-container-lowest rounded-xl border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Calendar className="w-4 h-4 text-on-surface-variant/60" />
+            </div>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-transparent border-none text-on-surface focus:ring-0 outline-none rounded-xl"
+            />
+          </div>
         </div>
 
         {/* Include me toggle */}

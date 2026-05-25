@@ -37,6 +37,7 @@ interface BillStats {
   total: number;
   participantCount: number;
   paidCount: number;
+  dueDate: string;
 }
 
 export default function AppHomePage() {
@@ -96,6 +97,7 @@ export default function AppHomePage() {
             total: total || (bills[i].total_amount - (youParticipant?.amount || 0)),
             participantCount: others.length,
             paidCount: others.filter((p: Participant) => p.paid).length,
+            dueDate: data.due_date || "",
           };
         }
       });
@@ -333,10 +335,11 @@ export default function AppHomePage() {
             <div className="flex flex-col gap-3">
               {bills.map((bill) => {
                 const stats = billStats[bill.id];
+                const billPastDue = stats?.dueDate && new Date(stats.dueDate) < new Date() && stats.paid < stats.total;
                 return (
                   <div
                     key={bill.id}
-                    className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] transition-shadow flex flex-col gap-3 group relative"
+                    className={`bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_10px_30px_rgba(15,23,42,0.1)] transition-shadow flex flex-col gap-3 group relative ${billPastDue ? "border-l-[3px] border-l-destructive" : ""}`}
                   >
                     <div
                       className="cursor-pointer"
@@ -372,8 +375,15 @@ export default function AppHomePage() {
                               {formatRM(bill.total_amount)}
                             </p>
                             {stats ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success-container/20 text-on-success-container">
-                                {stats.paidCount}/{stats.participantCount} paid
+                              <span className="inline-flex items-center gap-1">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success-container/20 text-on-success-container">
+                                  {stats.paidCount}/{stats.participantCount} paid
+                                </span>
+                                {billPastDue && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/10 text-destructive">
+                                    Overdue
+                                  </span>
+                                )}
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">
