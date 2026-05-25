@@ -16,6 +16,11 @@ function useContactAvatars() {
       const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
       const map: Record<string, string> = {};
       contacts.forEach((c) => { if (c.avatar) map[c.name] = c.avatar; });
+      // Fallback for "You" from profile avatar
+      if (!map["You"]) {
+        const profileAvatar = localStorage.getItem("kongsi_avatar");
+        if (profileAvatar) map["You"] = profileAvatar;
+      }
       setAvatars(map);
     } catch {}
   }, []);
@@ -337,7 +342,7 @@ function DashboardContent() {
                         >
                           <Copy className="w-4 h-4" />
                         </button>
-                        {!p.paid && p.status !== "pending" && (
+                        {!p.paid && p.status !== "pending" && p.name !== "You" && (
                           <button
                             onClick={() => nudgeParticipant(p)}
                             className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
