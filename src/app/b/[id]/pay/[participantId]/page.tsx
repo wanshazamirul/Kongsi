@@ -175,25 +175,32 @@ function PayPageContent() {
             li.paidBy?.includes(p.name)
           );
           if (yourItems.length === 0) return null;
+
+          const soloItems = yourItems.filter(li => (li.paidBy?.length || 0) === 1);
+          const sharedItems = yourItems.filter(li => (li.paidBy?.length || 0) > 1);
+          const soloTotal = soloItems.reduce((s, li) => s + li.amount, 0);
+          const sharedPool = sharedItems.reduce((s, li) => s + li.amount, 0);
+          const remaining = p.amount - soloTotal;
+
           return (
             <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
               <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Your items</h2>
               <div className="space-y-1">
-                {yourItems.map((li, i) => {
-                  const isSolo = (li.paidBy?.length || 0) === 1;
+                {soloItems.map((li, i) => (
+                  <div key={`solo-${i}`} className="flex justify-between text-sm">
+                    <span className="text-on-surface">{li.name}</span>
+                    <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                {sharedItems.map((li, i) => {
+                  const share = sharedPool > 0 ? remaining * (li.amount / sharedPool) : 0;
                   return (
-                    <div key={i} className="flex justify-between text-sm">
+                    <div key={`shared-${i}`} className="flex justify-between text-sm">
                       <div>
                         <span className="text-on-surface">{li.name}</span>
-                        {!isSolo && (
-                          <p className="text-[10px] text-on-surface-variant mt-0.5">
-                            Shared cost
-                          </p>
-                        )}
+                        <p className="text-[10px] text-on-surface-variant mt-0.5">Shared cost</p>
                       </div>
-                      <span className="text-on-surface-variant">
-                        {isSolo ? `RM${li.amount.toFixed(2)}` : "—"}
-                      </span>
+                      <span className="text-on-surface-variant">RM{share.toFixed(2)}</span>
                     </div>
                   );
                 })}
