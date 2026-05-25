@@ -20,11 +20,17 @@ export async function POST(request: Request) {
           content: [
             {
               type: "text",
-              text: `Extract data from this receipt/bill as a JSON object with two fields: \"title\" (the restaurant/merchant name) and \"items\". For each item include: name (the item name in original language), amount (item price as number, NOT total). Return ONLY valid JSON, no other text.
+              text: `Analyze this image. First, determine if this is a receipt, bill, or invoice. If it IS a receipt/bill/invoice, extract the data. If it is NOT (e.g. a selfie, cat photo, screenshot of something else, random image), set isReceipt to false.
 
-Example: {"title":"Restoran Ali Maju","items":[{"name":"Roti Canai","amount":2.50},{"name":"Teh Tarik","amount":3.00}]}
+Return ONLY valid JSON with these fields:
+- "isReceipt": true if this is a receipt/bill/invoice, false otherwise
+- "title": the restaurant/merchant name (or empty string if not a receipt)
+- "items": array of {name (original language), amount (number, NOT total)} (or empty array if not a receipt)
 
-If you can't read it, return {"title":"Restaurant Bill","items":[]}. Include service charges/tax as items. Return ONLY valid JSON.`,
+Example receipt: {"isReceipt":true,"title":"Restoran Ali Maju","items":[{"name":"Roti Canai","amount":2.50},{"name":"Teh Tarik","amount":3.00}]}
+Example non-receipt: {"isReceipt":false,"title":"","items":[]}
+
+Include service charges/tax as items. Return ONLY valid JSON, no other text.`,
             },
             {
               type: "image_url",
@@ -39,11 +45,13 @@ If you can't read it, return {"title":"Restaurant Bill","items":[]}. Include ser
 
     const text = completion.choices[0]?.message?.content || "{}";
     const match = text.match(/\{[\s\S]*\}/);
-    const data = match ? JSON.parse(match[0]) : { title: "Restaurant Bill", items: [] };
-    const title = data.title || "Restaurant Bill";
-    const items = data.items || [];
+    const data = match ? JSON.parse(match[0]) : { isReceipt: false, title: "", items: [] };
 
-    return NextResponse.json({ title, items });
+    return NextResponse.json({
+      isReceipt: data.isReceipt !== false,
+      title: data.title || "Restaurant Bill",
+      items: data.items || [],
+    });
   } catch (err) {
     return NextResponse.json({ error: safeError(err) }, { status: 500 });
   }

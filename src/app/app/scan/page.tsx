@@ -120,6 +120,12 @@ function ScanPageContent() {
       });
       if (res.ok) {
         const data = await res.json();
+        if (data.isReceipt === false) {
+          toast.error("That doesn't look like a receipt. Try another image.");
+          setImage(null);
+          setItems([]);
+          return;
+        }
         if (data.items?.length > 0) {
           setItems(data.items);
           setTitle(data.title || "Restaurant Bill");
