@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Share2, CheckCircle2, Receipt, Loader2, Copy, Home, X, ZoomIn, QrCode } from "lucide-react";
+import { Skeleton, ParticipantSkeleton } from "@/components/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -202,15 +204,53 @@ function DashboardContent() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="min-h-screen pb-24">
+        <TopBar showBack onBack={() => router.push("/app")} />
+        <main className="max-w-2xl mx-auto px-5 pb-8 flex flex-col gap-8">
+          <section className="flex flex-col gap-3">
+            <Skeleton className="w-64 h-8" />
+            <Skeleton className="w-48 h-4" />
+          </section>
+          <section className="bg-surface-container-lowest rounded-xl p-4 flex flex-col gap-4">
+            <div className="flex justify-between">
+              <div className="flex flex-col gap-2">
+                <Skeleton className="w-20 h-3" />
+                <Skeleton className="w-40 h-10" />
+              </div>
+              <Skeleton className="w-28 h-10 rounded-full" />
+            </div>
+            <Skeleton className="w-full h-2 rounded-full" />
+          </section>
+          <section className="bg-surface-container-lowest rounded-xl p-4">
+            <Skeleton className="w-24 h-3 mb-3" />
+            <div className="space-y-2">
+              <Skeleton className="w-full h-5" />
+              <Skeleton className="w-full h-5" />
+              <Skeleton className="w-3/4 h-5" />
+            </div>
+          </section>
+          <div className="flex gap-4 border-b border-outline-variant pb-2">
+            <Skeleton className="w-20 h-6" />
+            <Skeleton className="w-20 h-6" />
+            <Skeleton className="w-16 h-6" />
+          </div>
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => <ParticipantSkeleton key={i} />)}
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (error || !bill) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Receipt className="w-12 h-12 text-muted-foreground" />
-        <p className="text-muted-foreground text-lg">{error || "Bill not found"}</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+      <div className="min-h-screen pb-24">
+        <TopBar showBack onBack={() => router.push("/app")} />
+        <ErrorState
+          message={error || "Bill not found"}
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -239,10 +279,20 @@ function DashboardContent() {
         {/* Title */}
         <section className="flex flex-col gap-3">
           <h2 className="text-2xl md:text-3xl font-bold text-on-surface tracking-[-0.01em]">{bill.title}</h2>
-          <p className="text-sm text-on-surface-variant flex items-center gap-2">
-            <span className="text-lg">📅</span>
-            Organized by You
-          </p>
+          {bill.description && (
+            <p className="text-sm text-on-surface-variant">{bill.description}</p>
+          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-xs text-on-surface-variant flex items-center gap-1.5">
+              <span className="text-base">📅</span>
+              Organized by You
+            </p>
+            {bill.due_date && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">
+                Due {new Date(bill.due_date).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            )}
+          </div>
         </section>
 
         {/* Progress Card */}

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Loader2, Receipt, Upload, Check, ArrowUpToLine, Download } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
+import { Skeleton } from "@/components/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { toast } from "sonner";
 import { convertToWebP } from "@/lib/image-utils";
 
@@ -92,18 +94,43 @@ function PayPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="min-h-screen flex flex-col bg-surface">
+        <TopBar />
+        <main className="flex-1 flex flex-col items-center px-5 pt-4 pb-8 max-w-md mx-auto w-full gap-6">
+          <div className="text-center flex flex-col items-center gap-2">
+            <Skeleton className="w-48 h-6" />
+            <Skeleton className="w-32 h-4" />
+            <Skeleton className="w-28 h-12 mt-2" />
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
+            <Skeleton className="w-20 h-3 mb-3" />
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex justify-between">
+                  <Skeleton className="w-32 h-4" />
+                  <Skeleton className="w-14 h-4" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-surface-container-lowest rounded-xl p-4 w-full">
+            <Skeleton className="w-24 h-3 mb-3 mx-auto" />
+            <Skeleton className="w-[200px] h-[200px] mx-auto rounded-lg" />
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!bill || !bill.participant) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Receipt className="w-12 h-12 text-muted-foreground" />
-        <p className="text-muted-foreground text-lg">Invalid link</p>
-        <p className="text-xs text-muted-foreground">This payment link is broken or expired.</p>
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <ErrorState
+          message="Invalid link"
+          onRetry={() => window.location.reload()}
+        />
+        <p className="text-xs text-on-surface-variant text-center -mt-2">This payment link is broken or expired.</p>
       </div>
     );
   }

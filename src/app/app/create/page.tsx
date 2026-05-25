@@ -32,6 +32,7 @@ export default function CreateBillPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
 
   // Line items
@@ -91,6 +92,7 @@ export default function CreateBillPage() {
       total,
       includeMe,
       description: description.trim(),
+      due_date: dueDate,
     }));
 
     router.push("/app/scan?mode=manual");
@@ -125,6 +127,7 @@ export default function CreateBillPage() {
         title: title.trim(),
         total_amount: Math.round(total * 100) / 100,
         description: description.trim(),
+        due_date: dueDate,
         participants: parsed.map((p) => ({ name: p.name, amount: Math.round(p.amount * 100) / 100 })),
         line_items: lineItems.filter((li) => li.name.trim()).map((li, i) => {
           const assigned = itemAssignments[i] || [];
@@ -258,6 +261,19 @@ export default function CreateBillPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={500}
+                />
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2" htmlFor="due_date">Due Date (Optional)</label>
+                <Input
+                  id="due_date"
+                  type="date"
+                  className="block w-full px-4 py-5 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary shadow-[0px_4px_20px_rgba(15,23,42,0.05)] placeholder:text-outline-variant transition-all"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
                 />
               </div>
 

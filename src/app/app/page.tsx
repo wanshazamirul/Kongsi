@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Receipt, Plus, Trash2, Loader2, ScanLine, Bell } from "lucide-react";
 import { formatRM } from "@/lib/utils";
 import { TopBar } from "@/components/top-bar";
+import { BillCardSkeleton } from "@/components/skeleton";
+import { ErrorState } from "@/components/error-state";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +44,8 @@ export default function AppHomePage() {
   const [bills, setBills] = useState<SavedBill[]>([]);
   const [billStats, setBillStats] = useState<Record<string, BillStats>>({});
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -60,6 +64,7 @@ export default function AppHomePage() {
     }
     let cancelled = false;
     async function fetchStats() {
+      setStatsError(false);
       const stats: Record<string, BillStats> = {};
       const results = await Promise.allSettled(
         bills.map((b) =>
@@ -69,8 +74,10 @@ export default function AppHomePage() {
         )
       );
       if (cancelled) return;
+      let hasData = false;
       results.forEach((r, i) => {
         if (r.status === "fulfilled" && r.value) {
+          hasData = true;
           const data = r.value;
           const participants: Participant[] = data.participants || [];
           const youParticipant = participants.find((p: Participant) => p.name === "You");
@@ -92,12 +99,13 @@ export default function AppHomePage() {
           };
         }
       });
-      setBillStats(stats);
+      if (!hasData && bills.length > 0) setStatsError(true);
+      setBillStats(hasData ? stats : {});
       setStatsLoading(false);
     }
     fetchStats();
     return () => { cancelled = true; };
-  }, [bills]);
+  }, [bills, retryKey]);
 
   // Aggregate across all bills
   const aggregate = (() => {
@@ -153,88 +161,91 @@ export default function AppHomePage() {
     <div className="min-h-screen pb-24">
       <TopBar />
       <div className="max-w-3xl mx-auto px-5 flex flex-col gap-8 pt-2">
-        {/* Total Outstanding Bento Card — inverted: dark bg in light mode */}
-        <section className="relative rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden bg-slate-900 dark:bg-white shadow-[0px_4px_24px_rgba(15,23,42,0.15)] dark:shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
-          {/* Decorative background blobs */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/30 rounded-full blur-2xl" />
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl" />
+        {/* Hero Card — slim, gradient, dark in light / grey in dark */}
+        <section className="relative rounded-xl p-5 flex flex-col gap-4 overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 dark:from-slate-700 dark:via-slate-800 dark:to-slate-700 shadow-[0px_4px_24px_rgba(15,23,42,0.15)] dark:shadow-[0px_4px_20px_rgba(15,23,42,0.08)]">
+          {/* Decorative blobs */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl dark:bg-primary/15" />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-emerald-400/15 rounded-full blur-2xl dark:bg-emerald-400/10" />
 
-          <div className="flex flex-col gap-3 z-10 w-full md:w-auto text-center md:text-left">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Total Outstanding
-            </h2>
-            <p className="text-5xl font-bold tracking-[-0.02em] text-white dark:text-primary">
-              {formatRM(aggregate.totalRemaining)}
-            </p>
-            {!statsLoading && aggregate.totalParticipantCount > 0 && (
-              <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
-                <span className="inline-flex items-center gap-1 bg-emerald-400/20 text-emerald-300 dark:bg-success-container/20 dark:text-on-success-container px-2 py-1 rounded-full text-xs font-semibold">
-                  {aggregate.totalPaidCount}/{aggregate.totalParticipantCount} paid
-                </span>
-                {aggregate.unpaidBillCount > 0 && (
-                  <span className="inline-flex items-center gap-1 bg-white/10 text-slate-300 dark:bg-surface-container-high dark:text-on-surface-variant px-2 py-1 rounded-full text-xs font-semibold">
-                    {aggregate.unpaidBillCount} {aggregate.unpaidBillCount === 1 ? "bill" : "bills"} left
-                  </span>
+          {/* Title — centered */}
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400 text-center z-10">
+            Total Outstanding
+          </h2>
+
+          {/* Amount + Ring — side by side */}
+          <div className="flex items-center justify-between z-10 px-2">
+            <div className="flex flex-col">
+              <p className="text-5xl font-bold tracking-[-0.02em] text-white dark:text-slate-100">
+                {formatRM(aggregate.totalRemaining)}
+              </p>
+              {statsLoading && bills.length > 0 && (
+                <div className="flex items-center gap-1 mt-1 text-slate-400 text-xs">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Loading stats…
+                </div>
+              )}
+            </div>
+
+            {/* Donut ring */}
+            <div className="relative w-28 h-28 flex-shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50" cy="50" fill="transparent" r="40"
+                  strokeWidth="8"
+                  className="stroke-white/10 dark:stroke-white/10"
+                />
+                {paidPct > 0 && (
+                  <circle
+                    cx="50" cy="50" fill="transparent" r="40"
+                    strokeWidth="8"
+                    strokeDasharray={`${paidDash} ${circumference - paidDash}`}
+                    className="stroke-emerald-400 dark:stroke-emerald-400"
+                    strokeLinecap="round"
+                  />
                 )}
+                {remainingPct > 0 && paidPct > 0 && (
+                  <circle
+                    cx="50" cy="50" fill="transparent" r="40"
+                    strokeWidth="8"
+                    strokeDasharray={`${remainingDash} ${circumference}`}
+                    strokeDashoffset={-paidDash}
+                    className="stroke-amber-400 dark:stroke-amber-400"
+                    strokeLinecap="round"
+                  />
+                )}
+                {remainingPct >= 1 && (
+                  <circle
+                    cx="50" cy="50" fill="transparent" r="40"
+                    strokeWidth="8"
+                    strokeDasharray={`${circumference} ${circumference}`}
+                    className="stroke-amber-400 dark:stroke-amber-400"
+                    strokeLinecap="round"
+                  />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-semibold text-white dark:text-slate-100">
+                  {statsLoading ? "…" : aggregate.unpaidBillCount}
+                </span>
+                <span className="text-[10px] font-semibold uppercase text-slate-400 dark:text-slate-400">
+                  {aggregate.unpaidBillCount === 1 ? "Bill" : "Bills"}
+                </span>
               </div>
-            )}
-            {statsLoading && bills.length > 0 && (
-              <div className="flex items-center gap-1 mt-2 text-slate-400 text-xs">
-                <Loader2 className="w-3 h-3 animate-spin" /> Loading stats…
-              </div>
-            )}
-          </div>
-
-          {/* Donut ring — paid vs remaining */}
-          <div className="relative w-32 h-32 flex-shrink-0 z-10 mx-auto md:mx-0">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-              {/* Background track */}
-              <circle
-                cx="50" cy="50" fill="transparent" r="40"
-                strokeWidth="8"
-                className="stroke-white/10 dark:stroke-surface-container-high"
-              />
-              {/* Paid segment — emerald/green */}
-              {paidPct > 0 && (
-                <circle
-                  cx="50" cy="50" fill="transparent" r="40"
-                  strokeWidth="8"
-                  strokeDasharray={`${paidDash} ${circumference - paidDash}`}
-                  className="stroke-emerald-400 dark:stroke-success"
-                  strokeLinecap="round"
-                />
-              )}
-              {/* Remaining segment — amber/warning */}
-              {remainingPct > 0 && paidPct > 0 && (
-                <circle
-                  cx="50" cy="50" fill="transparent" r="40"
-                  strokeWidth="8"
-                  strokeDasharray={`${remainingDash} ${circumference}`}
-                  strokeDashoffset={-paidDash}
-                  className="stroke-amber-400 dark:stroke-accent"
-                  strokeLinecap="round"
-                />
-              )}
-              {/* All remaining (no paid yet) */}
-              {remainingPct >= 1 && (
-                <circle
-                  cx="50" cy="50" fill="transparent" r="40"
-                  strokeWidth="8"
-                  strokeDasharray={`${circumference} ${circumference}`}
-                  className="stroke-amber-400 dark:stroke-accent"
-                  strokeLinecap="round"
-                />
-              )}
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-semibold text-white dark:text-on-surface">
-                {statsLoading ? "…" : aggregate.unpaidBillCount}
-              </span>
-              <span className="text-[10px] font-semibold uppercase text-slate-400 dark:text-on-surface-variant">
-                {aggregate.unpaidBillCount === 1 ? "Bill" : "Bills"}
-              </span>
             </div>
           </div>
+
+          {/* Paid count chips — centered below */}
+          {!statsLoading && aggregate.totalParticipantCount > 0 && (
+            <div className="flex items-center justify-center gap-2 z-10">
+              <span className="inline-flex items-center gap-1 bg-emerald-400/15 text-emerald-300 dark:bg-emerald-400/15 dark:text-emerald-300 px-2 py-1 rounded-full text-xs font-semibold">
+                {aggregate.totalPaidCount}/{aggregate.totalParticipantCount} paid
+              </span>
+              {aggregate.unpaidBillCount > 0 && (
+                <span className="inline-flex items-center gap-1 bg-white/10 text-slate-300 dark:bg-white/10 dark:text-slate-300 px-2 py-1 rounded-full text-xs font-semibold">
+                  {aggregate.unpaidBillCount} {aggregate.unpaidBillCount === 1 ? "bill" : "bills"} left
+                </span>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Quick Actions Grid */}
@@ -281,7 +292,28 @@ export default function AppHomePage() {
         </section>
 
         {/* Active Bills List */}
-        {bills.length > 0 && (
+        {statsLoading && bills.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-on-surface">Active Bills</h3>
+              <span className="text-xs text-on-surface-variant">Loading...</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              {bills.map((bill) => (
+                <BillCardSkeleton key={bill.id} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {statsError && !statsLoading && (
+          <ErrorState
+            message="Couldn't load bill stats"
+            onRetry={() => setRetryKey((k) => k + 1)}
+          />
+        )}
+
+        {!statsLoading && !statsError && bills.length > 0 && (
           <section className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-semibold text-on-surface">

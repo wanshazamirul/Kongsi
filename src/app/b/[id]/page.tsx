@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Receipt, Lock, UserPlus } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
+import { Skeleton } from "@/components/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { getDeviceId } from "@/lib/device-id";
 
 function useContactAvatars() {
@@ -102,15 +104,44 @@ export default function PublicBillPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <main className="flex-1 flex items-center justify-center p-5">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-[24px] p-8 flex flex-col items-center gap-6 border border-white/20">
+            <Skeleton className="w-20 h-20 rounded-full" />
+            <div className="flex flex-col items-center gap-2">
+              <Skeleton className="w-48 h-4" />
+              <Skeleton className="w-36 h-6" />
+            </div>
+            <Skeleton className="w-24 h-3" />
+            <Skeleton className="w-40 h-12" />
+            <div className="w-full space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div className="flex-1 flex justify-between">
+                    <Skeleton className="w-24 h-4" />
+                    <Skeleton className="w-16 h-4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (!bill) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <Receipt className="w-12 h-12 text-muted-foreground" />
-        <p className="text-muted-foreground text-lg">Bill not found</p>
-        <p className="text-xs text-muted-foreground">The link might be broken or the bill was deleted.</p>
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <ErrorState
+          message="Bill not found"
+          onRetry={() => window.location.reload()}
+        />
+        <p className="text-xs text-on-surface-variant text-center -mt-2">The link might be broken or the bill was deleted.</p>
       </div>
     );
   }
@@ -142,6 +173,14 @@ export default function PublicBillPage() {
               <strong className="text-on-surface font-semibold">{organizerName}</strong> invited you to pay for
             </h1>
             <h1 className="text-xl font-bold text-on-surface mt-1">{bill.title}</h1>
+            {bill.description && (
+              <p className="text-xs text-on-surface-variant mt-2 max-w-xs">{bill.description}</p>
+            )}
+            {bill.due_date && (
+              <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-container-high text-on-surface-variant">
+                Due {new Date(bill.due_date).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            )}
             <div className="mt-6">
               <span className="text-xs text-on-surface-variant uppercase tracking-wider block mb-2">Amount Due</span>
               <div className="text-5xl font-bold text-primary tracking-[-0.02em]">

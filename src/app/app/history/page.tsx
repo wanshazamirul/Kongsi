@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Receipt, Trash2, Loader2 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { formatRM } from "@/lib/utils";
 import {
   Dialog,
@@ -43,7 +44,9 @@ export default function BillsPage() {
       setBills(updated);
       localStorage.setItem("kongsi_bills", JSON.stringify(updated));
       setDeleteId(null);
-    } catch {}
+    } catch {
+      toast.error("Failed to delete bill");
+    }
     setDeleting(false);
   }
 

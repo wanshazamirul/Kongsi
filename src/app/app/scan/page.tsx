@@ -39,6 +39,7 @@ function ScanPageContent() {
   const [isManual, setIsManual] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
@@ -75,6 +76,7 @@ function ScanPageContent() {
         setItems(parsed.items || []);
         setIsManual(true);
         if (parsed.includeMe) setIncludeMe(true);
+        if (parsed.due_date) setDueDate(parsed.due_date);
       } catch {}
       sessionStorage.removeItem("kongsi_manual_items");
       return;
@@ -231,6 +233,7 @@ function ScanPageContent() {
       body: JSON.stringify({
         title: title.trim(),
         total_amount: total,
+        due_date: dueDate,
         participants: safeParts,
         line_items: items
           .filter((li) => li.name && li.amount > 0)
