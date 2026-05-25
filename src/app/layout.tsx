@@ -22,6 +22,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("kongsi-theme")==="dark")document.documentElement.classList.add("dark")}catch{}`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased font-sans">
         {children}
         <Toaster />
