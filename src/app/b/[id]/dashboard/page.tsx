@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon, Home, X, ZoomIn } from "lucide-react";
+import { Share2, CheckCircle2, Receipt, Loader2, Copy, Home, X, ZoomIn, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -69,11 +69,10 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const contactAvatars = useContactAvatars();
   const [tab, setTab] = useState<"unpaid" | "pending" | "paid">("unpaid");
-  const [qrUploading, setQrUploading] = useState(false);
   const [approving, setApproving] = useState<string | null>(null);
   const [adminQr, setAdminQr] = useState<string | null>(null);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
-  const qrFileRef = useRef<HTMLInputElement>(null);
+  const qrAttached = useRef(false);
 
   useEffect(() => {
     if (token) loadDashboard();
@@ -100,64 +99,33 @@ function DashboardContent() {
     if (res.ok) {
       const data = await res.json();
       setBill(data);
-      if (data.admin_qr) setAdminQr(data.admin_qr);
+      if (data.admin_qr) {
+        setAdminQr(data.admin_qr);
+      } else if (!qrAttached.current) {
+        // Try to attach saved payment QR from profile
+        try {
+          const saved = localStorage.getItem("kongsi_payment_method");
+          if (saved) {
+            const pm: { qr?: string } = JSON.parse(saved);
+            if (pm.qr) {
+              const attachRes = await fetch(`/api/bills/${id}/qr`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ qr_image: pm.qr, admin_token: token }),
+              });
+              if (attachRes.ok) {
+                setAdminQr(pm.qr);
+                qrAttached.current = true;
+              }
+            }
+          }
+        } catch {}
+      }
     } else {
       const err = await res.json();
       setError(err.error || "Failed to load");
     }
     setLoading(false);
-  }
-
-  async function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !bill) return;
-    setQrUploading(true);
-    try {
-      // Compress to WebP blob first (like avatars), then read as base64
-      const bitmap = await createImageBitmap(file);
-      const maxDim = 512;
-      let { width, height } = bitmap;
-      if (width > maxDim || height > maxDim) {
-        const ratio = Math.min(maxDim / width, maxDim / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      bitmap.close();
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
-          "image/webp",
-          0.6,
-        );
-      });
-
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-
-      const res = await fetch(`/api/bills/${id}/qr`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_image: base64, admin_token: token }),
-      });
-      if (res.ok) {
-        setAdminQr(base64);
-        toast.success("QR uploaded!");
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Upload failed");
-      }
-    } catch { toast.error("Failed to process image"); }
-    setQrUploading(false);
-    e.target.value = "";
   }
 
   async function approveParticipant(p: Participant) {
@@ -347,31 +315,27 @@ function DashboardContent() {
           <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Payment QR</h3>
           {adminQr ? (
             <div className="flex items-center gap-4">
-              <img src={adminQr} alt="QR" className="w-16 h-16 rounded-lg object-cover" />
-              <div className="flex-1">
-                <p className="text-xs text-on-surface">QR uploaded</p>
-                <button
-                  onClick={() => { setAdminQr(null); }}
-                  className="text-xs text-primary hover:underline mt-1"
-                >
-                  Replace
-                </button>
+              <img src={adminQr} alt="Payment QR" className="w-20 h-20 rounded-lg object-cover border border-outline-variant" />
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-on-surface font-medium">QR active</p>
+                <p className="text-[10px] text-on-surface-variant">Friends scan this to pay</p>
+                <a href="/app/profile" className="text-[10px] text-primary hover:underline mt-0.5">
+                  Change in Profile
+                </a>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => qrFileRef.current?.click()}
-              disabled={qrUploading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary transition-colors"
-            >
-              {qrUploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <><Upload className="w-4 h-4" /><span className="text-sm font-semibold">Upload QR Code</span></>
-              )}
-            </button>
+            <div className="text-center py-3">
+              <QrCode className="w-8 h-8 text-on-surface-variant/30 mx-auto mb-2" />
+              <p className="text-xs text-on-surface-variant mb-2">No payment QR set</p>
+              <a
+                href="/app/profile"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+              >
+                Set up in Profile
+              </a>
+            </div>
           )}
-          <input ref={qrFileRef} type="file" accept="image/*" onChange={handleQrUpload} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
         </section>
 
         {/* Tabs & Lists */}
