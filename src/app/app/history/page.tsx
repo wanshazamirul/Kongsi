@@ -62,12 +62,7 @@ export default function BillsPage() {
       <div className="min-h-screen pb-24">
         <TopBar />
         <main className="px-5 max-w-3xl mx-auto">
-          <div className="flex justify-between items-end mb-4">
-            <h2 className="text-2xl font-bold text-on-surface tracking-tight">Bills</h2>
-            <Button onClick={() => router.push("/app/create")} className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-1 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] active:scale-95">
-              <Plus className="w-4 h-4" /> New Bill
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-on-surface tracking-tight mb-4">Bills</h2>
           <div className="flex flex-col items-center gap-4 py-16">
             <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center">
               <Receipt className="w-8 h-8 text-on-surface-variant" />
