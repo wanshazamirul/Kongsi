@@ -90,24 +90,34 @@ function DashboardContent() {
     if (!file || !bill) return;
     setQrUploading(true);
     try {
-      const { convertToWebP } = await import("@/lib/image-utils");
-      const webp = await convertToWebP(file);
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const res = await fetch(`/api/bills/${id}/qr`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ qr_image: base64, admin_token: token }),
-        });
-        if (res.ok) {
-          setAdminQr(base64);
-          toast.success("QR uploaded!");
-        } else {
-          toast.error("Upload failed");
-        }
-      };
-      reader.readAsDataURL(webp);
+      // Resize QR to max 512px, compress aggressively — QR codes are small
+      const bitmap = await createImageBitmap(file);
+      const maxDim = 512;
+      let { width, height } = bitmap;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close();
+      const base64 = canvas.toDataURL("image/webp", 0.6);
+      const res = await fetch(`/api/bills/${id}/qr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qr_image: base64, admin_token: token }),
+      });
+      if (res.ok) {
+        setAdminQr(base64);
+        toast.success("QR uploaded!");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Upload failed");
+      }
     } catch { toast.error("Failed to process image"); }
     setQrUploading(false);
     e.target.value = "";
@@ -194,14 +204,21 @@ function DashboardContent() {
     );
   }
 
-  const pendingParticipants = bill.participants.filter((p) => !p.paid && p.status === "pending");
-  const unpaidParticipants = bill.participants.filter((p) => !p.paid && p.status !== "pending");
-  const paidParticipants = bill.participants.filter((p) => p.paid || p.status === "paid");
+  const hasYou = bill.participants.some((p) => p.name === "You");
+  const others = hasYou ? bill.participants.filter((p) => p.name !== "You") : bill.participants;
+  const pendingParticipants = others.filter((p) => !p.paid && p.status === "pending");
+  const unpaidParticipants = others.filter((p) => !p.paid && p.status !== "pending");
+  const paidParticipants = others.filter((p) => p.paid || p.status === "paid");
   const totalPaid = paidParticipants.reduce((s, p) => s + p.amount, 0);
-  const remaining = bill.total_amount - totalPaid;
-  const progress = bill.total_amount > 0 ? (totalPaid / bill.total_amount) * 100 : 0;
-  const allPaid = paidParticipants.length === bill.participants.length;
-  const displayList = tab === "unpaid" ? unpaidParticipants : tab === "pending" ? pendingParticipants : paidParticipants;
+  const othersTotal = others.reduce((s, p) => s + p.amount, 0);
+  const progress = othersTotal > 0 ? (totalPaid / othersTotal) * 100 : 0;
+  const allPaid = paidParticipants.length === others.length;
+  const displayParticipants = tab === "unpaid" ? unpaidParticipants : tab === "pending" ? pendingParticipants : paidParticipants;
+  // Full list for display (includes You in appropriate tab)
+  const fullUnpaid = bill.participants.filter((p) => !p.paid && p.status !== "pending");
+  const fullPending = bill.participants.filter((p) => !p.paid && p.status === "pending");
+  const fullPaid = bill.participants.filter((p) => p.paid || p.status === "paid");
+  const displayList = tab === "unpaid" ? fullUnpaid : tab === "pending" ? fullPending : fullPaid;
 
   return (
     <div className="min-h-screen pb-24">
@@ -224,7 +241,7 @@ function DashboardContent() {
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Collected</span>
               <div className="mt-1">
                 <span className="text-4xl font-bold text-primary tracking-[-0.02em]">RM{totalPaid.toFixed(0)}</span>
-                <span className="text-lg text-on-surface-variant font-medium"> / RM{bill.total_amount.toFixed(0)}</span>
+                <span className="text-lg text-on-surface-variant font-medium"> / RM{othersTotal.toFixed(0)}</span>
               </div>
             </div>
             <button
@@ -246,7 +263,7 @@ function DashboardContent() {
             </div>
             <div className="flex justify-between mt-2 text-[10px] font-semibold text-on-surface-variant uppercase">
               <span>{Math.round(progress)}% Collected</span>
-              <span>{paidParticipants.length} of {bill.participants.length} Paid</span>
+              <span>{paidParticipants.length} of {others.length} Paid</span>
             </div>
           </div>
         </section>
@@ -290,19 +307,19 @@ function DashboardContent() {
               onClick={() => setTab("unpaid")}
               className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "unpaid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
             >
-              Unpaid ({unpaidParticipants.length})
+              Unpaid ({fullUnpaid.length})
             </button>
             <button
               onClick={() => setTab("pending")}
               className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "pending" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
             >
-              Pending ({pendingParticipants.length})
+              Pending ({fullPending.length})
             </button>
             <button
               onClick={() => setTab("paid")}
               className={`text-sm font-semibold pb-1 px-2 transition-colors ${tab === "paid" ? "text-primary border-b-2 border-primary" : "text-on-surface-variant hover:text-on-surface"}`}
             >
-              Paid ({paidParticipants.length})
+              Paid ({fullPaid.length})
             </button>
           </div>
 
