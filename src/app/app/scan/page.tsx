@@ -313,7 +313,7 @@ function ScanPageContent() {
           }}
         />
 
-      <main className="px-5 pt-3 flex flex-col gap-6 pb-44">
+      <main className="px-5 pt-3 flex flex-col gap-6 pb-52">
         {/* Receipt card — click to edit title */}
         <button
           onClick={() => {
