@@ -12,7 +12,7 @@ export async function GET(
     const token = searchParams.get("token");
 
     const bill = await pbGet<{
-      id: string; title: string; total_amount: number; admin_qr: string;
+      id: string; title: string; total_amount: number; admin_qr: string; line_items: string;
     }>(`collections/kongsi_bills/records/${id}`).catch(() => null);
 
     if (!bill) return NextResponse.json({ error: "Bill not found" }, { status: 404 });
@@ -27,11 +27,15 @@ export async function GET(
       return NextResponse.json({ error: "Invalid token" }, { status: 403 });
     }
 
+    let line_items = null;
+    try { if (bill.line_items) line_items = JSON.parse(bill.line_items); } catch {}
+
     return NextResponse.json({
       id: bill.id,
       title: bill.title,
       total_amount: bill.total_amount,
       admin_qr: bill.admin_qr || null,
+      line_items,
       participant: {
         id: participant.id,
         name: participant.name,

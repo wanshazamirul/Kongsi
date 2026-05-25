@@ -40,6 +40,7 @@ interface Bill {
   due_date: string;
   created: string;
   participants: Participant[];
+  line_items?: { name: string; amount: number }[] | null;
 }
 
 export default function PublicBillPage() {
@@ -149,6 +150,25 @@ export default function PublicBillPage() {
             </div>
           </div>
 
+          {/* Line Items Breakdown */}
+          {bill.line_items && bill.line_items.length > 0 && (
+            <div className="px-6 pt-5 bg-surface-container-lowest">
+              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">What's on the bill</h2>
+              <div className="space-y-1.5 mb-1">
+                {bill.line_items.map((li, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-on-surface">{li.name}</span>
+                    <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
+                  <span className="text-on-surface">Total</span>
+                  <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Split Breakdown */}
           <div className="p-6 bg-surface-container-lowest">
             <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-4">Split Breakdown</h2>
@@ -170,9 +190,6 @@ export default function PublicBillPage() {
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-on-surface">{p.name}</span>
-                      {p.name === "You" && (
-                        <span className="text-[10px] text-primary ml-1">(Me)</span>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

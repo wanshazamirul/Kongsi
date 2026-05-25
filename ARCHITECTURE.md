@@ -23,6 +23,8 @@ Split bill payment tracker. Dutchie-inspired design system. KrackedDevs bounty (
 | description | text | Optional |
 | due_date | date | Optional deadline |
 | admin_token | text | Random token for dashboard access |
+| admin_qr | text | QR code image (data URL) |
+| line_items | text | JSON: [{name, amount}] line items from bill creation |
 
 ### kongsi_participants
 | Field | Type | Notes |

@@ -37,11 +37,12 @@ export default function CreateBillPage() {
   // Line items
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
+  const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
       const contacts: SavedContact[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-      return [{ name: "You", amount: "" }, ...contacts.map((c) => ({ name: c.name, amount: "" }))];
-    } catch { return [{ name: "You", amount: "" }]; }
+      return contacts.map((c) => ({ name: c.name, amount: "" }));
+    } catch { return []; }
   });
   const [recentContacts, setRecentContacts] = useState<SavedContact[]>(() => {
     try { return JSON.parse(localStorage.getItem("kongsi_contacts") || "[]"); }
@@ -55,15 +56,21 @@ export default function CreateBillPage() {
   const [itemAssignments, setItemAssignments] = useState<Record<number, number[]>>({});
 
   const total = parseFloat(totalAmount) || 0;
-  const validCount = participants.filter((p) => p.name.trim()).length;
+  const validCount = allParticipants().filter((p) => p.name.trim()).length;
 
   // Line item calculations
   const itemsSubtotal = lineItems.reduce((s, li) => s + (parseFloat(li.amount) || 0), 0);
   const taxAndFees = total - itemsSubtotal;
 
+  function allParticipants(): Participant[] {
+    return includeMe
+      ? [{ name: "You", amount: "" }, ...participants]
+      : participants;
+  }
+
   function canProceed(): boolean {
     if (step === 0) return title.trim().length > 0 && total > 0;
-    if (step === 1) return participants.filter((p) => p.name.trim()).length >= 2;
+    if (step === 1) return allParticipants().filter((p) => p.name.trim()).length >= 2;
     return true;
   }
 
@@ -82,6 +89,8 @@ export default function CreateBillPage() {
       title: title.trim() || "Manual Bill",
       items,
       total,
+      includeMe,
+      description: description.trim(),
     }));
 
     router.push("/app/scan?mode=manual");
@@ -90,7 +99,7 @@ export default function CreateBillPage() {
   async function handleSubmit() {
     setError(null);
 
-    const parsed = participants
+    const parsed = allParticipants()
       .filter((p) => p.name.trim())
       .map((p) => ({
         name: p.name.trim(),
@@ -117,6 +126,7 @@ export default function CreateBillPage() {
         total_amount: Math.round(total * 100) / 100,
         description: description.trim(),
         participants: parsed.map((p) => ({ name: p.name, amount: Math.round(p.amount * 100) / 100 })),
+        line_items: lineItems.filter((li) => li.name.trim()).map((li) => ({ name: li.name.trim(), amount: parseFloat(li.amount) || 0 })),
       }),
     });
 
@@ -319,6 +329,20 @@ export default function CreateBillPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Include me toggle */}
+            <div className="flex items-center justify-between bg-surface-container-lowest rounded-xl p-4 border border-outline-variant">
+              <div>
+                <p className="text-sm font-semibold text-on-surface">Include me in the split</p>
+                <p className="text-[10px] text-on-surface-variant">I'm paying for my share too</p>
+              </div>
+              <button
+                onClick={() => setIncludeMe(!includeMe)}
+                className={`w-11 h-6 rounded-full transition-colors relative ${includeMe ? "bg-primary" : "bg-outline-variant"}`}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm ${includeMe ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+              </button>
             </div>
 
             <div className="flex-grow" />

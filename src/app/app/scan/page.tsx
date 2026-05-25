@@ -39,11 +39,12 @@ function ScanPageContent() {
   const [isManual, setIsManual] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
+  const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
       const contacts: { name: string; avatar?: string }[] = JSON.parse(localStorage.getItem("kongsi_contacts") || "[]");
-      return [{ name: "You" }, ...contacts.slice(0, 5).map((c) => ({ name: c.name, avatar: c.avatar }))];
-    } catch { return [{ name: "You" }]; }
+      return contacts.slice(0, 5).map((c) => ({ name: c.name, avatar: c.avatar }));
+    } catch { return []; }
   });
   const [itemAssignments, setItemAssignments] = useState<Record<number, number>>({});
   const [creating, setCreating] = useState(false);
@@ -73,6 +74,7 @@ function ScanPageContent() {
         setTitle(parsed.title || "Manual Bill");
         setItems(parsed.items || []);
         setIsManual(true);
+        if (parsed.includeMe) setIncludeMe(true);
       } catch {}
       sessionStorage.removeItem("kongsi_manual_items");
       return;
@@ -129,6 +131,27 @@ function ScanPageContent() {
     }
   }
 
+  function toggleIncludeMe() {
+    if (includeMe) {
+      setItemAssignments((prev) => {
+        const next: Record<number, number> = {};
+        for (const [itemIdx, personIdx] of Object.entries(prev)) {
+          if (personIdx > 0) next[Number(itemIdx)] = personIdx - 1;
+        }
+        return next;
+      });
+    } else {
+      setItemAssignments((prev) => {
+        const next: Record<number, number> = {};
+        for (const [itemIdx, personIdx] of Object.entries(prev)) {
+          next[Number(itemIdx)] = personIdx + 1;
+        }
+        return next;
+      });
+    }
+    setIncludeMe(!includeMe);
+  }
+
   function toggleItemAssignment(itemIndex: number, participantIndex: number) {
     setItemAssignments((prev) => {
       const next = { ...prev };
@@ -138,11 +161,15 @@ function ScanPageContent() {
     });
   }
 
+  const allParticipants = includeMe
+    ? [{ name: "You" }, ...participants]
+    : participants;
+
   async function createBill() {
     if (!title.trim()) { toast.error("Give the bill a title"); return; }
     if (items.length === 0) { toast.error("No items to split"); return; }
 
-    const validParticipants = participants.filter((p) => p.name.trim());
+    const validParticipants = allParticipants.filter((p) => p.name.trim());
     if (validParticipants.length === 0) { toast.error("Add at least one person"); return; }
 
     setCreating(true);
@@ -191,6 +218,9 @@ function ScanPageContent() {
         title: title.trim(),
         total_amount: total,
         participants: safeParts,
+        line_items: items
+          .filter((li) => li.name && li.amount > 0)
+          .map((li) => ({ name: li.name, amount: li.amount })),
       }),
     });
 
@@ -221,7 +251,7 @@ function ScanPageContent() {
   }
 
   const total = items.reduce((s, i) => s + i.amount, 0);
-  const validParticipants = participants.filter((p) => p.name.trim());
+  const validParticipants = allParticipants.filter((p) => p.name.trim());
 
   // Scanning progress — full screen
   if (scanning) {
@@ -336,6 +366,17 @@ function ScanPageContent() {
             <p className="text-sm font-semibold text-primary">RM{total.toFixed(2)}</p>
           </div>
         </button>
+
+        {/* Include me toggle */}
+        <div className="flex items-center justify-between bg-surface-container-lowest rounded-xl p-3 border border-outline-variant">
+          <span className="text-xs font-semibold text-on-surface">Include me in the split</span>
+          <button
+            onClick={toggleIncludeMe}
+            className={`w-10 h-5 rounded-full transition-colors relative ${includeMe ? "bg-primary" : "bg-outline-variant"}`}
+          >
+            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm ${includeMe ? "translate-x-[20px]" : "translate-x-0.5"}`} />
+          </button>
+        </div>
 
         {/* Participants legend + Add button */}
         <section className="flex gap-3 overflow-x-auto pb-1">

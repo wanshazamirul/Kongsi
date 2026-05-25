@@ -48,6 +48,7 @@ interface Bill {
   admin_token: string;
   admin_qr?: string;
   participants: Participant[];
+  line_items?: { name: string; amount: number }[] | null;
 }
 
 function DashboardContent() {
@@ -56,6 +57,12 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const isNew = searchParams.get("created") === "true";
+
+  // Track sent reminders per participant
+  const [sentReminders, setSentReminders] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("kongsi_sent_reminders") || "{}"); }
+    catch { return {}; }
+  });
 
   const [bill, setBill] = useState<Bill | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +112,7 @@ function DashboardContent() {
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(bitmap, 0, 0, width, height);
       bitmap.close();
-      const base64 = canvas.toDataURL("image/webp", 0.6);
+      const base64 = canvas.toDataURL("image/jpeg", 0.55);
       const res = await fetch(`/api/bills/${id}/qr`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -174,10 +181,16 @@ function DashboardContent() {
   }
 
   function nudgeParticipant(p: Participant) {
-    const url = `${window.location.origin}/b/${id}`;
-    const text = `Yo ${p.name}, you still owe RM${p.amount.toFixed(2)} for "${bill?.title}". Please pay here: ${url}`;
+    const isSend = !sentReminders[p.id];
+    const payUrl = `${window.location.origin}/b/${id}/pay/${p.id}?token=${p.payment_token || ""}`;
+    const text = isSend
+      ? `Hey ${p.name}, you owe RM${p.amount.toFixed(2)} for "${bill?.title}". Pay here: ${payUrl}`
+      : `Reminder: You still owe RM${p.amount.toFixed(2)} for "${bill?.title}". Please pay: ${payUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-    toast.success(`Nudge sent to ${p.name}!`);
+    toast.success(isSend ? `Link sent to ${p.name}!` : `Reminder sent to ${p.name}!`);
+    const next = { ...sentReminders, [p.id]: true };
+    setSentReminders(next);
+    try { localStorage.setItem("kongsi_sent_reminders", JSON.stringify(next)); } catch {}
   }
 
   if (!token) {
@@ -267,6 +280,25 @@ function DashboardContent() {
             </div>
           </div>
         </section>
+
+        {/* Line Items Breakdown */}
+        {bill.line_items && bill.line_items.length > 0 && (
+          <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
+            <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">What's Being Paid</h3>
+            <div className="space-y-2">
+              {bill.line_items.map((li, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-on-surface">{li.name}</span>
+                  <span className="text-on-surface-variant font-medium">RM{li.amount.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-2 mt-1">
+                <span className="text-on-surface">Total</span>
+                <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Payment QR */}
         <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
@@ -364,7 +396,7 @@ function DashboardContent() {
                             onClick={() => nudgeParticipant(p)}
                             className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity active:scale-95"
                           >
-                            Nudge
+                            {sentReminders[p.id] ? "Remind" : "Send"}
                           </button>
                         )}
                         {(p.paid || p.status === "paid") && (

@@ -15,6 +15,12 @@ const createBillSchema = z.object({
       amount: z.number().positive(),
     })
   ).min(1).max(50),
+  line_items: z.array(
+    z.object({
+      name: z.string().min(1),
+      amount: z.number(),
+    })
+  ).optional(),
 });
 
 export async function POST(request: Request) {
@@ -30,6 +36,7 @@ export async function POST(request: Request) {
       description: parsed.description || "",
       due_date: parsed.due_date || "",
       admin_token: adminToken,
+      line_items: parsed.line_items?.length ? JSON.stringify(parsed.line_items) : "",
     });
 
     // Create participants with payment tokens
