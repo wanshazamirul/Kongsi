@@ -37,6 +37,7 @@ export default function CreateBillPage() {
 
   // Line items
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [taxPct, setTaxPct] = useState("");
 
   const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
@@ -56,11 +57,14 @@ export default function CreateBillPage() {
   // Multi-select item assignments: itemIndex → participant indices
   const [itemAssignments, setItemAssignments] = useState<Record<number, number[]>>({});
 
-  const total = parseFloat(totalAmount) || 0;
   const validCount = allParticipants().filter((p) => p.name.trim()).length;
 
   // Line item calculations
   const itemsSubtotal = lineItems.reduce((s, li) => s + (parseFloat(li.amount) || 0), 0);
+  const taxAmount = taxPct ? Math.round(itemsSubtotal * parseFloat(taxPct)) / 100 : 0;
+  const manualTotal = parseFloat(totalAmount) || 0;
+  // Tax% auto-adjusts total; manual total overrides if larger
+  let total = taxAmount > 0 ? itemsSubtotal + taxAmount : manualTotal;
   const taxAndFees = total - itemsSubtotal;
 
   function allParticipants(): Participant[] {
@@ -82,9 +86,14 @@ export default function CreateBillPage() {
       .map((li) => ({ name: li.name.trim(), amount: parseFloat(li.amount) || 0 }));
 
     // If no line items, create single total item
-    const items = splitItems.length > 0
+    let items = splitItems.length > 0
       ? splitItems
       : [{ name: title.trim() || "Total", amount: total }];
+
+    // Add tax as unassigned line item (only when tax% > 0)
+    if (taxAmount > 0) {
+      items = [...items, { name: `SST ${parseFloat(taxPct)}%`, amount: taxAmount }];
+    }
 
     sessionStorage.setItem("kongsi_manual_items", JSON.stringify({
       title: title.trim() || "Manual Bill",
@@ -330,6 +339,29 @@ export default function CreateBillPage() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Tax % input */}
+                {lineItems.length > 0 && itemsSubtotal > 0 && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="relative flex items-center bg-surface-container-lowest rounded-lg border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all flex-1">
+                      <span className="pl-3 text-xs text-on-surface-variant">Tax</span>
+                      <Input
+                        value={taxPct}
+                        onChange={(e) => setTaxPct(e.target.value)}
+                        placeholder="6"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        className="w-16 border-0 bg-transparent focus:ring-0 focus-visible:ring-0 py-2 pr-1 pl-1 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
+                      />
+                      <span className="pr-3 text-xs text-on-surface-variant">%</span>
+                    </div>
+                    {taxAmount > 0 && (
+                      <span className="text-xs text-on-surface-variant shrink-0">+RM{taxAmount.toFixed(2)}</span>
+                    )}
                   </div>
                 )}
 

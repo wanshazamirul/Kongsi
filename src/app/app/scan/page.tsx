@@ -41,6 +41,7 @@ function ScanPageContent() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [manualTotal, setManualTotal] = useState(0);
   const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
@@ -79,6 +80,7 @@ function ScanPageContent() {
         if (parsed.includeMe) setIncludeMe(true);
         if (parsed.due_date) setDueDate(parsed.due_date);
         if (parsed.description) setDescription(parsed.description);
+        if (parsed.total) setManualTotal(parsed.total);
       } catch {}
       sessionStorage.removeItem("kongsi_manual_items");
       return;
@@ -209,12 +211,33 @@ function ScanPageContent() {
       }
     });
 
-    const total = Math.round(items.reduce((s, i) => s + i.amount, 0) * 100) / 100;
+    const itemsTotal = Math.round(items.reduce((s, i) => s + i.amount, 0) * 100) / 100;
+    const total = manualTotal || itemsTotal;
 
-    // Build participant amounts, ensuring sums match total
+    // Pass 3: distribute any tax gap (total - itemsTotal) proportionally
+    const taxGap = Math.round((total - itemsTotal) * 100) / 100;
+    if (taxGap > 0) {
+      const updatedAssignedTotal = Object.values(personTotals).reduce((s, v) => s + v, 0);
+      if (updatedAssignedTotal > 0) {
+        validParticipants.forEach((_, pi) => {
+          const ratio = (personTotals[pi] || 0) / updatedAssignedTotal;
+          personTotals[pi] = (personTotals[pi] || 0) + taxGap * ratio;
+        });
+      } else {
+        const perPerson = taxGap / validParticipants.length;
+        validParticipants.forEach((_, pi) => {
+          personTotals[pi] = (personTotals[pi] || 0) + perPerson;
+        });
+      }
+    }
+
+    // Build participant amounts — only fall back to equal split if NO items are assigned
+    const anyAssigned = Object.values(personTotals).some((v) => v > 0);
     const parts = validParticipants.map((p, pi) => ({
       name: p.name.trim(),
-      amount: Math.round((personTotals[pi] || total / validParticipants.length) * 100) / 100,
+      amount: Math.round((
+        anyAssigned ? (personTotals[pi] || 0) : total / validParticipants.length
+      ) * 100) / 100,
     }));
     // Fix rounding: add remainder to participant with largest amount
     const partsSum = parts.reduce((s, p) => s + p.amount, 0);
@@ -234,7 +257,7 @@ function ScanPageContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: title.trim(),
-        total_amount: total,
+        total_amount: Math.round(total * 100) / 100,
         description: description.trim(),
         due_date: dueDate,
         participants: safeParts,
@@ -280,7 +303,7 @@ function ScanPageContent() {
     setCreating(false);
   }
 
-  const total = items.reduce((s, i) => s + i.amount, 0);
+  const total = manualTotal || items.reduce((s, i) => s + i.amount, 0);
   const validParticipants = allParticipants.filter((p) => p.name.trim());
 
   // Scanning progress — full screen
@@ -352,6 +375,8 @@ function ScanPageContent() {
   }
 
   const youIndex = validParticipants.findIndex((p) => p.name === "You");
+  const itemsSum = items.reduce((s, i) => s + i.amount, 0);
+  const taxGap = manualTotal > itemsSum ? manualTotal - itemsSum : 0;
   const myTotal = youIndex >= 0
     ? items.reduce((sum, item, i) => {
         if (itemAssignments[i] === youIndex) return sum + item.amount;
@@ -359,7 +384,7 @@ function ScanPageContent() {
       }, 0)
     : 0;
   const leftToAssign = items.filter((_, i) => itemAssignments[i] === undefined)
-    .reduce((s, item) => s + item.amount, 0);
+    .reduce((s, item) => s + item.amount, 0) + taxGap;
 
   // Split Items view
   return (
