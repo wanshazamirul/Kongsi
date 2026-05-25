@@ -39,6 +39,7 @@ function ScanPageContent() {
   const [isManual, setIsManual] = useState(false);
   const [items, setItems] = useState<ScannedItem[]>([]);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [includeMe, setIncludeMe] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>(() => {
@@ -77,6 +78,7 @@ function ScanPageContent() {
         setIsManual(true);
         if (parsed.includeMe) setIncludeMe(true);
         if (parsed.due_date) setDueDate(parsed.due_date);
+        if (parsed.description) setDescription(parsed.description);
       } catch {}
       sessionStorage.removeItem("kongsi_manual_items");
       return;
@@ -233,6 +235,7 @@ function ScanPageContent() {
       body: JSON.stringify({
         title: title.trim(),
         total_amount: total,
+        description: description.trim(),
         due_date: dueDate,
         participants: safeParts,
         line_items: items
@@ -304,8 +307,8 @@ function ScanPageContent() {
     );
   }
 
-  // Choose input screen
-  if (!image) {
+  // Choose input screen — skip upload screen if manual mode
+  if (!image && !isManual) {
     return (
       <div className="min-h-screen flex flex-col bg-surface">
         <TopBar title="Upload Receipt" showBack onBack={() => router.push("/app")} />
@@ -393,6 +396,24 @@ function ScanPageContent() {
             <p className="text-sm font-semibold text-primary">RM{total.toFixed(2)}</p>
           </div>
         </button>
+
+        {/* Description + Due Date — collapsible extra fields */}
+        <div className="flex flex-col gap-2">
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add a note (optional)"
+            maxLength={500}
+            className="w-full text-xs bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+          />
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            min={new Date().toISOString().split("T")[0]}
+            className="w-full text-xs bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2.5 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+          />
+        </div>
 
         {/* Include me toggle */}
         <div className="flex items-center justify-between bg-surface-container-lowest rounded-xl p-3 border border-outline-variant">
