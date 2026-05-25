@@ -220,7 +220,17 @@ function ScanPageContent() {
         participants: safeParts,
         line_items: items
           .filter((li) => li.name && li.amount > 0)
-          .map((li) => ({ name: li.name, amount: li.amount })),
+          .map((li, i) => {
+            const assignedTo = itemAssignments[i];
+            const paidBy: string[] = [];
+            if (assignedTo !== undefined) {
+              paidBy.push(validParticipants[assignedTo]?.name || "Unknown");
+            } else {
+              // Unassigned — split equally among all
+              validParticipants.forEach((vp) => paidBy.push(vp.name));
+            }
+            return { name: li.name, amount: li.amount, paidBy };
+          }),
       }),
     });
 

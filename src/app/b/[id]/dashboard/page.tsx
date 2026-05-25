@@ -48,7 +48,7 @@ interface Bill {
   admin_token: string;
   admin_qr?: string;
   participants: Participant[];
-  line_items?: { name: string; amount: number }[] | null;
+  line_items?: { name: string; amount: number; paidBy?: string[] }[] | null;
 }
 
 function DashboardContent() {
@@ -286,12 +286,24 @@ function DashboardContent() {
           <section className="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)]">
             <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">What's Being Paid</h3>
             <div className="space-y-2">
-              {bill.line_items.map((li, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-on-surface">{li.name}</span>
-                  <span className="text-on-surface-variant font-medium">RM{li.amount.toFixed(2)}</span>
-                </div>
-              ))}
+              {bill.line_items.map((li, i) => {
+                const assignees = li.paidBy?.length ? li.paidBy : null;
+                const allParticipants = bill.participants.map(p => p.name);
+                const isSplitEqually = !assignees || assignees.length === allParticipants.length;
+                return (
+                  <div key={i} className="flex justify-between text-sm">
+                    <div>
+                      <span className="text-on-surface">{li.name}</span>
+                      {assignees && assignees.length > 0 && (
+                        <p className="text-[10px] text-on-surface-variant mt-0.5">
+                          {isSplitEqually ? "Split equally" : assignees.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-on-surface-variant font-medium">RM{li.amount.toFixed(2)}</span>
+                  </div>
+                );
+              })}
               <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-2 mt-1">
                 <span className="text-on-surface">Total</span>
                 <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>

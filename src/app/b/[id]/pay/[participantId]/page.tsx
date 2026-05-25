@@ -23,7 +23,7 @@ interface BillData {
   total_amount: number;
   admin_qr: string | null;
   participant: ParticipantData | null;
-  line_items?: { name: string; amount: number }[] | null;
+  line_items?: { name: string; amount: number; paidBy?: string[] }[] | null;
 }
 
 function PayPageContent() {
@@ -174,12 +174,22 @@ function PayPageContent() {
           <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
             <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">What's on the bill</h2>
             <div className="space-y-1">
-              {bill.line_items.map((li, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-on-surface">{li.name}</span>
-                  <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
-                </div>
-              ))}
+              {bill.line_items.map((li, i) => {
+                const assignees = li.paidBy?.length ? li.paidBy : null;
+                return (
+                  <div key={i} className="flex justify-between text-sm">
+                    <div>
+                      <span className="text-on-surface">{li.name}</span>
+                      {assignees && assignees.length > 0 && (
+                        <p className="text-[10px] text-on-surface-variant mt-0.5">
+                          {assignees.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
+                  </div>
+                );
+              })}
               <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
                 <span className="text-on-surface">Total</span>
                 <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>

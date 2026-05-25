@@ -40,7 +40,7 @@ interface Bill {
   due_date: string;
   created: string;
   participants: Participant[];
-  line_items?: { name: string; amount: number }[] | null;
+  line_items?: { name: string; amount: number; paidBy?: string[] }[] | null;
 }
 
 export default function PublicBillPage() {
@@ -155,12 +155,24 @@ export default function PublicBillPage() {
             <div className="px-6 pt-5 bg-surface-container-lowest">
               <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">What's on the bill</h2>
               <div className="space-y-1.5 mb-1">
-                {bill.line_items.map((li, i) => (
-                  <div key={i} className="flex justify-between text-sm">
-                    <span className="text-on-surface">{li.name}</span>
-                    <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
-                  </div>
-                ))}
+                {bill.line_items.map((li, i) => {
+                  const assignees = li.paidBy?.length ? li.paidBy : null;
+                  const allNames = bill.participants.map(p => p.name);
+                  const isSplitEqually = !assignees || assignees.length === allNames.length;
+                  return (
+                    <div key={i} className="flex justify-between text-sm">
+                      <div>
+                        <span className="text-on-surface">{li.name}</span>
+                        {assignees && assignees.length > 0 && (
+                          <p className="text-[10px] text-on-surface-variant mt-0.5">
+                            {isSplitEqually ? "Split equally" : assignees.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
                 <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
                   <span className="text-on-surface">Total</span>
                   <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>
