@@ -175,19 +175,33 @@ function ScanPageContent() {
     setCreating(true);
 
     const personTotals: Record<number, number> = {};
-    // Initialize all participants to 0
     validParticipants.forEach((_, pi) => { personTotals[pi] = 0; });
 
+    // Pass 1: assigned items
     items.forEach((item, itemIndex) => {
       const assignedTo = itemAssignments[itemIndex];
       if (assignedTo !== undefined) {
         personTotals[assignedTo] = (personTotals[assignedTo] || 0) + item.amount;
-      } else {
-        // Unassigned items split equally
-        const perPerson = item.amount / validParticipants.length;
-        validParticipants.forEach((_, pi) => {
-          personTotals[pi] = (personTotals[pi] || 0) + perPerson;
-        });
+      }
+    });
+
+    // Pass 2: unassigned items (tax/fees) — distribute proportionally
+    const assignedTotal = Object.values(personTotals).reduce((s, v) => s + v, 0);
+    items.forEach((item, itemIndex) => {
+      const assignedTo = itemAssignments[itemIndex];
+      if (assignedTo === undefined) {
+        if (assignedTotal > 0) {
+          validParticipants.forEach((_, pi) => {
+            const ratio = (personTotals[pi] || 0) / assignedTotal;
+            personTotals[pi] = (personTotals[pi] || 0) + item.amount * ratio;
+          });
+        } else {
+          // No assigned items at all — fall back to equal split
+          const perPerson = item.amount / validParticipants.length;
+          validParticipants.forEach((_, pi) => {
+            personTotals[pi] = (personTotals[pi] || 0) + perPerson;
+          });
+        }
       }
     });
 
