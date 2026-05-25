@@ -9,10 +9,10 @@ export async function POST(request: Request) {
     const { image } = await request.json();
     if (!image) return NextResponse.json({ error: "No image provided" }, { status: 400 });
 
-    // Remove data URL prefix if present
     const base64 = image.replace(/^data:image\/\w+;base64,/, "");
 
-    const completion = await groq.chat.completions.create({
+    // ── Tier 1: Scout extracts raw text from image ──
+    const ocr = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [
         {
@@ -20,17 +20,7 @@ export async function POST(request: Request) {
           content: [
             {
               type: "text",
-              text: `Analyze this image. First, determine if this is a receipt, bill, or invoice. If it IS a receipt/bill/invoice, extract the data. If it is NOT (e.g. a selfie, cat photo, screenshot of something else, random image), set isReceipt to false.
-
-Return ONLY valid JSON with these fields:
-- "isReceipt": true if this is a receipt/bill/invoice, false otherwise
-- "title": the restaurant/merchant name (or empty string if not a receipt)
-- "items": array of {name (original language), amount (number, NOT total)} (or empty array if not a receipt)
-
-Example receipt: {"isReceipt":true,"title":"Restoran Ali Maju","items":[{"name":"Roti Canai","amount":2.50},{"name":"Teh Tarik","amount":3.00}]}
-Example non-receipt: {"isReceipt":false,"title":"","items":[]}
-
-Include service charges/tax as items. Return ONLY valid JSON, no other text.`,
+              text: "Read ALL text visible in this image. Output every word, number, and symbol you can see. Include headers, item names, prices, totals, taxes, dates — everything. No analysis, just output the raw text.",
             },
             {
               type: "image_url",
@@ -39,12 +29,41 @@ Include service charges/tax as items. Return ONLY valid JSON, no other text.`,
           ],
         },
       ],
-      temperature: 0.1,
-      max_tokens: 1000,
+      temperature: 0,
+      max_tokens: 500,
     });
 
-    const text = completion.choices[0]?.message?.content || "{}";
-    const match = text.match(/\{[\s\S]*\}/);
+    const rawText = ocr.choices[0]?.message?.content || "";
+
+    // ── Tier 2: GPT-OSS 120B structures the text ──
+    const structured = await groq.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+      messages: [
+        {
+          role: "user",
+          content: `Analyze this extracted text from an image. Determine if it's a receipt, bill, or invoice.
+
+If it IS a receipt/bill/invoice, extract the restaurant/merchant name and all line items with prices. Include service charges, taxes, and fees as items.
+
+If it is NOT a receipt (e.g. random text, gibberish, non-receipt content), set isReceipt to false.
+
+Return ONLY valid JSON, no other text:
+{
+  "isReceipt": true/false,
+  "title": "restaurant or merchant name (or empty)",
+  "items": [{"name": "item name", "amount": 0.00}]
+}
+
+Extracted text:
+${rawText}`,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 800,
+    });
+
+    const content = structured.choices[0]?.message?.content || "{}";
+    const match = content.match(/\{[\s\S]*\}/);
     const data = match ? JSON.parse(match[0]) : { isReceipt: false, title: "", items: [] };
 
     return NextResponse.json({
