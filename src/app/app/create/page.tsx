@@ -61,11 +61,13 @@ export default function CreateBillPage() {
 
   // Line item calculations
   const itemsSubtotal = lineItems.reduce((s, li) => s + (parseFloat(li.amount) || 0), 0);
-  const taxAmount = taxPct ? Math.round(itemsSubtotal * parseFloat(taxPct)) / 100 : 0;
   const manualTotal = parseFloat(totalAmount) || 0;
-  // Tax% auto-adjusts total; manual total overrides if larger
-  let total = taxAmount > 0 ? itemsSubtotal + taxAmount : manualTotal;
+  let total = manualTotal;
   const taxAndFees = total - itemsSubtotal;
+  // Auto-calculate tax % from the gap — user can edit if needed
+  const autoTaxPct = itemsSubtotal > 0 && taxAndFees > 0
+    ? Math.round((taxAndFees / itemsSubtotal) * 1000) / 10
+    : 0;
 
   function allParticipants(): Participant[] {
     return includeMe
@@ -90,9 +92,12 @@ export default function CreateBillPage() {
       ? splitItems
       : [{ name: title.trim() || "Total", amount: total }];
 
-    // Add tax as unassigned line item (only when tax% > 0)
-    if (taxAmount > 0) {
-      items = [...items, { name: `SST ${parseFloat(taxPct)}%`, amount: taxAmount }];
+    // Add tax/fees gap as unassigned line item
+    const taxGap = Math.round((total - items.reduce((s, i) => s + i.amount, 0)) * 100) / 100;
+    if (taxGap > 0) {
+      const pct = autoTaxPct || parseFloat(taxPct) || 0;
+      const label = pct > 0 ? `SST ${pct}%` : "Tax & Service";
+      items = [...items, { name: label, amount: taxGap }];
     }
 
     sessionStorage.setItem("kongsi_manual_items", JSON.stringify({
@@ -342,26 +347,24 @@ export default function CreateBillPage() {
                   </div>
                 )}
 
-                {/* Tax % input */}
-                {lineItems.length > 0 && itemsSubtotal > 0 && (
+                {/* Tax % — auto-calculated from gap, editable */}
+                {lineItems.length > 0 && itemsSubtotal > 0 && taxAndFees > 0 && (
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="relative flex items-center bg-surface-container-lowest rounded-lg border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all flex-1">
-                      <span className="pl-3 text-xs text-on-surface-variant">Tax</span>
+                    <span className="text-[10px] text-on-surface-variant uppercase tracking-wider">Tax rate</span>
+                    <div className="relative flex items-center bg-surface-container-lowest rounded-lg border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
                       <Input
-                        value={taxPct}
+                        value={taxPct || autoTaxPct || ""}
                         onChange={(e) => setTaxPct(e.target.value)}
-                        placeholder="6"
+                        placeholder={`${autoTaxPct}`}
                         type="number"
                         step="0.1"
                         min="0"
                         max="50"
-                        className="w-16 border-0 bg-transparent focus:ring-0 focus-visible:ring-0 py-2 pr-1 pl-1 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-outline-variant"
+                        className="w-14 border-0 bg-transparent focus:ring-0 focus-visible:ring-0 py-2 px-2 h-auto text-sm font-semibold text-on-surface text-right placeholder:text-on-surface-variant/50"
                       />
-                      <span className="pr-3 text-xs text-on-surface-variant">%</span>
+                      <span className="pr-2 text-xs text-on-surface-variant">%</span>
                     </div>
-                    {taxAmount > 0 && (
-                      <span className="text-xs text-on-surface-variant shrink-0">+RM{taxAmount.toFixed(2)}</span>
-                    )}
+                    <span className="text-xs text-on-surface-variant ml-auto">+RM{taxAndFees.toFixed(2)}</span>
                   </div>
                 )}
 
