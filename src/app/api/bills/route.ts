@@ -19,7 +19,7 @@ const createBillSchema = z.object({
     z.object({
       name: z.string().min(1),
       amount: z.number(),
-    })
+    }).passthrough()
   ).optional(),
 });
 
