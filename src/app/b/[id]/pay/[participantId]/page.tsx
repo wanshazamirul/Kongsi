@@ -169,34 +169,30 @@ function PayPageContent() {
           <p className="text-4xl font-bold text-primary mt-2">RM{p.amount.toFixed(2)}</p>
         </div>
 
-        {/* Line Items */}
-        {bill.line_items && bill.line_items.length > 0 && (
-          <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
-            <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">What's on the bill</h2>
-            <div className="space-y-1">
-              {bill.line_items.map((li, i) => {
-                const assignees = li.paidBy?.length ? li.paidBy : null;
-                return (
+        {/* Your Items — filtered to only show this participant's items */}
+        {bill.line_items && bill.line_items.length > 0 && (() => {
+          const yourItems = bill.line_items.filter((li) =>
+            li.paidBy?.includes(p.name)
+          );
+          if (yourItems.length === 0) return null;
+          return (
+            <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant w-full">
+              <h2 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Your items</h2>
+              <div className="space-y-1">
+                {yourItems.map((li, i) => (
                   <div key={i} className="flex justify-between text-sm">
-                    <div>
-                      <span className="text-on-surface">{li.name}</span>
-                      {assignees && assignees.length > 0 && (
-                        <p className="text-[10px] text-on-surface-variant mt-0.5">
-                          {assignees.join(", ")}
-                        </p>
-                      )}
-                    </div>
+                    <span className="text-on-surface">{li.name}</span>
                     <span className="text-on-surface-variant">RM{li.amount.toFixed(2)}</span>
                   </div>
-                );
-              })}
-              <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
-                <span className="text-on-surface">Total</span>
-                <span className="text-primary">RM{bill.total_amount.toFixed(2)}</span>
+                ))}
+                <div className="flex justify-between text-sm font-semibold border-t border-outline-variant pt-1.5 mt-1">
+                  <span className="text-on-surface">Your total</span>
+                  <span className="text-primary">RM{p.amount.toFixed(2)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* QR Code */}
         {bill.admin_qr ? (
