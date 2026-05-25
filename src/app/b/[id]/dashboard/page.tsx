@@ -97,7 +97,7 @@ function DashboardContent() {
     if (!file || !bill) return;
     setQrUploading(true);
     try {
-      // Resize QR to max 512px, compress aggressively — QR codes are small
+      // Compress to WebP blob first (like avatars), then read as base64
       const bitmap = await createImageBitmap(file);
       const maxDim = 512;
       let { width, height } = bitmap;
@@ -112,7 +112,21 @@ function DashboardContent() {
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(bitmap, 0, 0, width, height);
       bitmap.close();
-      const base64 = canvas.toDataURL("image/jpeg", 0.55);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+          "image/webp",
+          0.6,
+        );
+      });
+
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
       const res = await fetch(`/api/bills/${id}/qr`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
