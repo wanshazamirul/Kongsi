@@ -33,7 +33,7 @@ const faqs = [
   },
   {
     q: "How do I report an issue?",
-    a: "DM Wan on WhatsApp or submit feedback via the Waldo app. Links are in the Help section below.",
+    a: "Just WhatsApp me directly — I'll fix it as soon as I can. Link is below.",
   },
 ];
 
