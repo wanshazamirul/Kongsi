@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon, Home } from "lucide-react";
+import { ArrowLeft, Share2, CheckCircle2, Clock, Receipt, Loader2, Upload, Copy, ImageIcon, Home, X, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -72,10 +72,27 @@ function DashboardContent() {
   const [qrUploading, setQrUploading] = useState(false);
   const [approving, setApproving] = useState<string | null>(null);
   const [adminQr, setAdminQr] = useState<string | null>(null);
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
   const qrFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (token) loadDashboard();
+  }, [id, token]);
+
+  // One-time toast on first load
+  const [didFirstLoad, setDidFirstLoad] = useState(false);
+  useEffect(() => {
+    if (bill && isNew && !didFirstLoad) {
+      toast.success("Bill created! Share the link with your friends.");
+      setDidFirstLoad(true);
+    }
+  }, [bill, isNew, didFirstLoad]);
+
+  // Poll for realtime updates every 4s
+  useEffect(() => {
+    if (!id || !token) return;
+    const poll = setInterval(() => loadDashboard(), 4000);
+    return () => clearInterval(poll);
   }, [id, token]);
 
   async function loadDashboard() {
@@ -84,7 +101,6 @@ function DashboardContent() {
       const data = await res.json();
       setBill(data);
       if (data.admin_qr) setAdminQr(data.admin_qr);
-      if (isNew) toast.success("Bill created! Share the link with your friends.");
     } else {
       const err = await res.json();
       setError(err.error || "Failed to load");
@@ -436,7 +452,15 @@ function DashboardContent() {
                     {p.status === "pending" && (
                       <div className="flex items-center gap-3 pt-1 border-t border-outline-variant">
                         {p.proof_image && (
-                          <img src={p.proof_image} alt="Proof" className="w-12 h-12 rounded-lg object-cover" />
+                          <button
+                            onClick={() => setViewingProof(p.proof_image!)}
+                            className="relative group"
+                          >
+                            <img src={p.proof_image} alt="Proof" className="w-12 h-12 rounded-lg object-cover" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition-colors flex items-center justify-center">
+                              <ZoomIn className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </button>
                         )}
                         <div className="flex gap-2 flex-1">
                           <button
@@ -475,6 +499,35 @@ function DashboardContent() {
           </div>
         )}
       </main>
+
+      {/* Proof Image Lightbox */}
+      <AnimatePresence>
+        {viewingProof && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+            onClick={() => setViewingProof(null)}
+          >
+            <button
+              onClick={() => setViewingProof(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              src={viewingProof}
+              alt="Payment proof"
+              className="max-w-full max-h-[85vh] rounded-xl object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest border-t border-outline-variant px-4 py-3 flex justify-center">
