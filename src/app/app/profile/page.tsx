@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User, Sun, Moon, Trash2, CreditCard, HelpCircle, ChevronRight, Upload, ChevronDown, Banknote, QrCode, ExternalLink } from "lucide-react";
+import { User, Sun, Moon, Trash2, CreditCard, HelpCircle, ChevronRight, Upload, ChevronDown, Banknote, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { TopBar } from "@/components/top-bar";
@@ -423,17 +423,11 @@ export default function ProfilePage() {
                   </button>
                 ))}
 
-                {/* Feedback links */}
-                <div className="border-t border-outline-variant pt-3 mt-2 space-y-2">
-                  <a
-                    href="https://wa.me/601110801631"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-primary hover:underline"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Report an issue via WhatsApp
-                  </a>
+                {/* Feedback */}
+                <div className="border-t border-outline-variant pt-3 mt-2">
+                  <p className="text-xs text-on-surface-variant">
+                    Found a bug or have feedback? <span className="text-primary font-medium">WhatsApp me directly</span> — I'll sort it out.
+                  </p>
                 </div>
               </div>
             </motion.section>
