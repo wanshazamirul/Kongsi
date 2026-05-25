@@ -366,6 +366,11 @@ export default function AppHomePage() {
                                 day: "numeric",
                                 month: "short",
                               })}
+                              {stats?.dueDate && (
+                                <span className={`ml-2 ${billPastDue ? "text-destructive font-medium" : ""}`}>
+                                  · Due {new Date(stats.dueDate).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>
