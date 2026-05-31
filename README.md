@@ -9,31 +9,16 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 📖 Usage Workflow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        🧾 KONGSI WORKFLOW                           │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────┐  │
-│  │  CREATE  │───▶│  SPLIT   │───▶│  SHARE   │───▶│    TRACK     │  │
-│  │  bill    │    │  items   │    │  links   │    │  payments    │  │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────────┘  │
-│       │              │               │                  │           │
-│       ▼              ▼               ▼                  ▼           │
-│  📸 Scan or     👥 Assign     🔗 WhatsApp      📊 Dashboard         │
-│  manual entry   per person    personal URL     live updates         │
-│                                per friend      approve proofs       │
-│                                                                     │
-│  ───────────────────────────────────────────────────────────────    │
-│  💡 TYPICAL FLOW:                                                   │
-│                                                                     │
-│  You pay the bill  →  Create in Kongsi  →  Share with friends      │
-│                                          →  Friends see their share │
-│                                          →  They pay + upload proof │
-│                                          →  You approve  →  🎉      │
-└─────────────────────────────────────────────────────────────────────┘
+  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────┐
+  │  CREATE  │───▶│  SPLIT   │───▶│  SHARE   │───▶│    TRACK     │
+  │  bill    │    │  items   │    │  links   │    │  payments    │
+  └──────────┘    └──────────┘    └──────────┘    └──────────────┘
+       │              │               │                  │
+       ▼              ▼               ▼                  ▼
+  📸 Scan or     👥 Assign     🔗 WhatsApp      📊 Dashboard
+  manual entry   per person    personal URL     live updates
+                               per friend      approve proofs
 ```
-
-### Step by Step
 
 | # | Action | Who |
 |---|--------|-----|
@@ -49,31 +34,26 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 🏗️ System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        🏗️ SYSTEM ARCHITECTURE                        │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   ┌─────────────┐      ┌─────────────┐      ┌──────────────────┐   │
-│   │  🖥️ Next.js  │◀────▶│ 🗄️ PocketBase│◀────▶│ 🤖 Groq AI       │   │
-│   │  (Vercel)   │      │  (Docker)   │      │ (Receipt OCR)    │   │
-│   └──────┬──────┘      └──────┬──────┘      └──────────────────┘   │
-│          │                    │                                      │
-│          ▼                    ▼                                      │
-│   ┌──────────────┐    ┌──────────────┐                              │
-│   │ 🎨 Client UI │    │ ☁️ Cloudflare │                              │
-│   │ Tailwind v4  │    │   Tunnel     │                              │
-│   │ Framer Motion│    │ (PB public)  │                              │
-│   │ shadcn/ui    │    └──────────────┘                              │
-│   └──────────────┘                                                  │
-│                                                                      │
-│   ───────────────────────────────────────────────────────────────   │
-│   🔐 SECURITY LAYER                                                  │
-│                                                                      │
-│   Admin Token ──▶ DELETE bill                                       │
-│   Payment Token ──▶ Personal pay page                                │
-│   Rate Limit ──▶ 10 req/min (create), 5/15min (pay)                 │
-│   Headers ──▶ HSTS, X-Content-Type, X-Frame, X-XSS                  │
-└──────────────────────────────────────────────────────────────────────┘
+                       ┌──────────────────┐
+                       │   🤖 Groq AI     │
+                       │  (Receipt OCR)   │
+                       └────────┬─────────┘
+                                │
+       ┌────────────────────────┼────────────────────────┐
+       │                        │                        │
+       ▼                        ▼                        ▼
+┌─────────────┐         ┌─────────────┐         ┌──────────────┐
+│  🖥️ Next.js │◀───────▶│ 🗄️ PocketBase│         │ ☁️ Cloudflare │
+│  (Vercel)   │         │  (Docker)   │         │   Tunnel     │
+└──────┬──────┘         └──────┬──────┘         │  (PB public) │
+       │                       │                 └──────────────┘
+       ▼                       ▼
+┌──────────────┐        ┌──────────────┐
+│ 🎨 Client UI │        │ 🔐 Auth Layer │
+│ Tailwind v4  │        │ Token gates   │
+│ Framer Motion│        │ Rate limits   │
+│ shadcn/ui    │        │ Sec headers   │
+└──────────────┘        └──────────────┘
 ```
 
 ### Request Flow
@@ -86,32 +66,32 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
       │────────────────────────────▶│                             │
       │                             │  GET kongsi_bills/[id]      │
       │                             │────────────────────────────▶│
-      │                             │  ◀─────────────────────────│
+      │                             │  ◀──────────────────────────│
       │  ◀──────────────────────────│                             │
       │                             │                             │
       │  POST /b/[id]/pay           │                             │
       │────────────────────────────▶│                             │
       │                             │  PATCH participant          │
       │                             │────────────────────────────▶│
-      │                             │  ◀─────────────────────────│
+      │                             │  ◀──────────────────────────│
       │  ◀──────────────────────────│                             │
-      │                             │                             │
-  👤 Admin (Organizer)              │                             │
-  ────────────────                  │                             │
-      │                             │                             │
-      │  GET /dashboard?token=xxx   │                             │
-      │────────────────────────────▶│                             │
-      │                       🔐 verify token                     │
-      │                             │  GET + filter               │
+
+  👤 Admin (Organizer)
+  ────────────────
+      │
+      │  GET /dashboard?token=xxx
+      │────────────────────────────▶│
+      │                       🔐 verify token
+      │                             │  GET + filter
       │                             │────────────────────────────▶│
-      │  ◀──────────────────────────│                             │
-      │                             │                             │
-      │  DELETE /b/[id]             │                             │
-      │────────────────────────────▶│                             │
-      │                       🔐 verify token                     │
-      │                             │  DELETE bill (cascade)      │
+      │  ◀──────────────────────────│
+      │
+      │  DELETE /b/[id]
+      │────────────────────────────▶│
+      │                       🔐 verify token
+      │                             │  DELETE bill (cascade)
       │                             │────────────────────────────▶│
-      │  ◀──────────────────────────│                             │
+      │  ◀──────────────────────────│
 ```
 
 ---
@@ -119,39 +99,33 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 🗃️ Data Model
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      🗃️ POCKETBASE COLLECTIONS                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌───────────────────────────────┐  ┌──────────────────────────────┐│
-│  │       kongsi_bills           │  │    kongsi_participants        ││
-│  ├───────────────────────────────┤  ├──────────────────────────────┤│
-│  │ id           text (PK)       │  │ id           text (PK)       ││
-│  │ title        text            │  │ bill_id      relation ───────┼┼──┐
-│  │ total_amount number          │  │ name         text            ││  │
-│  │ description  text            │  │ amount       number          ││  │
-│  │ due_date     date            │  │ paid         bool            ││  │
-│  │ admin_token  text 🔐         │  │ paid_at      date            ││  │
-│  │ admin_qr     text (500K)     │  │ status       text            ││  │
-│  │ line_items   text (500K)     │  │ payment_token text 🔐        ││  │
-│  └───────────────────────────────┘  │ proof_image  text (500K)     ││  │
-│                                      └──────────────────────────────┘│  │
-│  ┌─────────────────────────────────────────────────────────────────┘  │
-│  │                                                                    │
-│  │  🔗 CASCADE DELETE: Deleting a bill removes all its participants   │
-│  └────────────────────────────────────────────────────────────────────│
-│                                                                       │
-│  ┌──────────────────────────────────────────────────────────────────┐ │
-│  │                    line_items (JSON)                             │ │
-│  ├──────────────────────────────────────────────────────────────────┤ │
-│  │  [                                                               │ │
-│  │    { "name": "Nasi Goreng",   "amount": 12.50, "paidBy": [...] },│ │
-│  │    { "name": "Teh Tarik",     "amount":  3.00, "paidBy": [...] },│ │
-│  │    { "name": "Roti Canai",    "amount":  2.50, "paidBy": [...] },│ │
-│  │    { "name": "Tax (SST 6%)",  "amount":  1.08, "paidBy":  null } │ │
-│  │  ]                                                               │ │
-│  └──────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+  ┌─────────────────────────────────┐    ┌────────────────────────────────┐
+  │         kongsi_bills            │    │      kongsi_participants       │
+  ├─────────────────────────────────┤    ├────────────────────────────────┤
+  │  id             text     (PK)   │    │  id             text     (PK)  │
+  │  title          text            │    │  bill_id        relation ──────┼──┐
+  │  total_amount   number          │    │  name           text           │  │
+  │  description    text            │    │  amount         number         │  │
+  │  due_date       date            │    │  paid           bool           │  │
+  │  admin_token    text     🔐     │    │  paid_at        date           │  │
+  │  admin_qr       text(500K)      │    │  status         text           │  │
+  │  line_items     text(500K)      │    │  payment_token  text     🔐    │  │
+  └─────────────────────────────────┘    │  proof_image    text(500K)      │  │
+                                          └────────────────────────────────┘  │
+  ┌──────────────────────────────────────────────────────────────────────────┘
+  │
+  │  🔗 CASCADE DELETE: Deleting a bill removes all its participants
+  │
+  │  ┌─────────────────────────────────────────────────────────────────────┐
+  │  │                         line_items (JSON)                            │
+  │  ├─────────────────────────────────────────────────────────────────────┤
+  │  │  [                                                                   │
+  │  │    { "name": "Nasi Goreng",  "amount": 12.50, "paidBy": [...] },    │
+  │  │    { "name": "Teh Tarik",    "amount":  3.00, "paidBy": [...] },    │
+  │  │    { "name": "Roti Canai",   "amount":  2.50, "paidBy": [...] },    │
+  │  │    { "name": "Tax (SST 6%)", "amount":  1.08, "paidBy":  null }     │
+  │  │  ]                                                                   │
+  │  └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -159,38 +133,32 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 🧠 AI Receipt Scanner
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                   🤖 2-TIER RECEIPT SCANNING PIPELINE                 │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  📸 User uploads                                                    │
-│       │                                                             │
-│       ▼                                                             │
-│  ┌─────────────────────────────────────────┐                       │
-│  │  TIER 1: Scout Vision (Llama 4)          │                       │
-│  │  ─────────────────────────────────────── │                       │
-│  │  • Checks: "Is this a receipt?"          │                       │
-│  │  • Extracts: raw text from image         │                       │
-│  │  • Decision: receipt → Tier 2            │                       │
-│  │             not receipt → ❌ redirect     │                       │
-│  └─────────────────┬───────────────────────┘                       │
-│                    │                                               │
-│                    ▼                                               │
-│  ┌─────────────────────────────────────────┐                       │
-│  │  TIER 2: GPT-OSS 120B                     │                       │
-│  │  ─────────────────────────────────────── │                       │
-│  │  • Structures: raw text → line items      │                       │
-│  │  • Detects: subtotal vs total gap         │                       │
-│  │  • Calculates: tax % auto                  │                       │
-│  │  • Output: [{name, amount}, ...]          │                       │
-│  └─────────────────┬───────────────────────┘                       │
-│                    │                                               │
-│                    ▼                                               │
-│  ┌─────────────────────────────────────────┐                       │
-│  │  UI: Assign items to friends              │                       │
-│  └─────────────────────────────────────────┘                       │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+  📸 User uploads
+       │
+       ▼
+  ┌──────────────────────────────────────────┐
+  │  TIER 1: Scout Vision (Llama 4)          │
+  │  ─────────────────────────────────────── │
+  │  • Checks: "Is this a receipt?"          │
+  │  • Extracts: raw text from image         │
+  │  • Decision: receipt → Tier 2            │
+  │             not receipt → ❌ redirect     │
+  └──────────────────┬───────────────────────┘
+                     │
+                     ▼
+  ┌──────────────────────────────────────────┐
+  │  TIER 2: GPT-OSS 120B                    │
+  │  ─────────────────────────────────────── │
+  │  • Structures: raw text → line items     │
+  │  • Detects: subtotal vs total gap        │
+  │  • Calculates: tax % auto                │
+  │  • Output: [{name, amount}, ...]         │
+  └──────────────────┬───────────────────────┘
+                     │
+                     ▼
+  ┌──────────────────────────────────────────┐
+  │  UI: Assign items to friends             │
+  └──────────────────────────────────────────┘
 ```
 
 ---
@@ -198,33 +166,27 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 🛣️ Routes & API
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        🛣️ APPLICATION ROUTES                         │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  /                    🏠 Landing page (hero + features)             │
-│  /app                 📱 App home (quick actions + active bills)    │
-│  /app/create          ➕ 3-step bill creation wizard                 │
-│  /app/scan            📸 Receipt scanner + manual entry mode        │
-│  /app/history         🕐 Past bills (localStorage)                  │
-│  /b/[id]              💳 Public payment card                        │
-│  /b/[id]/dashboard    📊 Organizer dashboard (🔐 token-gated)       │
-│  /b/[id]/qr           📱 QR payment page                           │
-│                                                                     │
-├─────────────────────────────────────────────────────────────────────┤
-│                        ⚡ API ENDPOINTS                              │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  POST   /api/bills                    📝 Create bill + participants │
-│  GET    /api/bills/[id]               📋 Public bill data           │
-│  POST   /api/bills/[id]/pay           💰 Submit payment + proof     │
-│  GET    /api/bills/[id]/dashboard     📊 Dashboard data (🔐)        │
-│  DELETE /api/bills/[id]               🗑️  Delete bill + cascade (🔐) │
-│  POST   /api/scan-receipt             🤖 Receipt OCR + structuring  │
-│  POST   /api/bills/[id]/qr            📱 Upload admin QR code       │
-│  POST   /api/bills/[id]/approve       ✅ Approve payment proof      │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+  PAGES
+  ───────────────────────────────────────────────────────────
+  /                    🏠 Landing page (hero + features)
+  /app                 📱 App home (quick actions + active bills)
+  /app/create          ➕ 3-step bill creation wizard
+  /app/scan            📸 Receipt scanner + manual entry mode
+  /app/history         🕐 Past bills (localStorage)
+  /b/[id]              💳 Public payment card
+  /b/[id]/dashboard    📊 Organizer dashboard (🔐 token-gated)
+  /b/[id]/qr           📱 QR payment page
+
+  API ENDPOINTS
+  ───────────────────────────────────────────────────────────
+  POST   /api/bills                    📝 Create bill + participants
+  GET    /api/bills/[id]               📋 Public bill data
+  POST   /api/bills/[id]/pay           💰 Submit payment + proof
+  GET    /api/bills/[id]/dashboard     📊 Dashboard data (🔐)
+  DELETE /api/bills/[id]               🗑️ Delete bill + cascade (🔐)
+  POST   /api/scan-receipt             🤖 Receipt OCR + structuring
+  POST   /api/bills/[id]/qr            📱 Upload admin QR code
+  POST   /api/bills/[id]/approve       ✅ Approve payment proof
 ```
 
 ---
@@ -232,35 +194,29 @@ The easiest way to split bills with friends. Snap a receipt, assign who ate what
 ## 🛡️ Security
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        🛡️ SECURITY MEASURES                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  🔐 TOKEN AUTH                                                      │
-│     • Admin token: crypto.randomUUID() (not Math.random)            │
-│     • Payment token: 24-char random string per participant          │
-│     • DELETE + dashboard gated behind admin token verification      │
-│                                                                     │
-│  ⏱️ RATE LIMITING                                                    │
-│     • Create bill: 10 requests per minute per IP                    │
-│     • Submit payment: 5 requests per 15 minutes per IP              │
-│                                                                     │
-│  🖼️ PROOF VALIDATION                                                │
-│     • Image-only uploads (type checking)                            │
-│     • Size limits enforced                                          │
-│                                                                     │
-│  🛡️ SECURITY HEADERS                                                │
-│     • Strict-Transport-Security (HSTS)                              │
-│     • X-Content-Type-Options: nosniff                               │
-│     • X-Frame-Options: DENY                                         │
-│     • X-XSS-Protection                                              │
-│                                                                     │
-│  🔒 NO ACCOUNT SYSTEM                                                │
-│     • Dashboard access via unique token in URL (not guessable)      │
-│     • Contacts stored locally (localStorage)                        │
-│     • No user registration, no passwords to leak                    │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+  🔐 TOKEN AUTH
+     • Admin token: crypto.randomUUID() (not Math.random)
+     • Payment token: 24-char random string per participant
+     • DELETE + dashboard gated behind admin token verification
+
+  ⏱️ RATE LIMITING
+     • Create bill: 10 requests per minute per IP
+     • Submit payment: 5 requests per 15 minutes per IP
+
+  🖼️ PROOF VALIDATION
+     • Image-only uploads (type checking)
+     • Size limits enforced
+
+  🛡️ SECURITY HEADERS
+     • Strict-Transport-Security (HSTS)
+     • X-Content-Type-Options: nosniff
+     • X-Frame-Options: DENY
+     • X-XSS-Protection
+
+  🔒 NO ACCOUNT SYSTEM
+     • Dashboard access via unique token in URL (not guessable)
+     • Contacts stored locally (localStorage)
+     • No user registration, no passwords to leak
 ```
 
 ---
