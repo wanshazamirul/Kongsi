@@ -1,153 +1,330 @@
-# Kongsi — Split Bills, Zero Drama
+# 🧾 Kongsi — Split Bills, Zero Drama
 
-A beautiful split-bill tracker built for kopitiam crews. Create a bill, scan a receipt, assign items to people, and track who's paid — all with a Dutchie-inspired Material Design 3 interface.
+The easiest way to split bills with friends. Snap a receipt, assign who ate what, and track who's paid — no accounts, no fuss.
 
-**Live:** [kongsi.cognitio.my](https://kongsi.cognitio.my)
+**🔗 Live:** [kongsi.cognitio.my](https://kongsi.cognitio.my)
 
-## Why Kongsi?
+---
 
-Splitting bills after a group meal is chaos. Someone fronts the bill, then spends days chasing payments on WhatsApp. Receipts get lost. "Who ordered the teh tarik?" becomes a mystery.
+## 📖 Usage Workflow
 
-Kongsi fixes this:
-- One person creates the bill, adds participants, and shares a link
-- Friends see exactly what they owe and pay through the app
-- The organizer tracks everyone's status on a live dashboard
-- Receipt scanning with AI line-item extraction (no manual typing)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        🧾 KONGSI WORKFLOW                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────┐  │
+│  │  CREATE  │───▶│  SPLIT   │───▶│  SHARE   │───▶│    TRACK     │  │
+│  │  bill    │    │  items   │    │  links   │    │  payments    │  │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────────┘  │
+│       │              │               │                  │           │
+│       ▼              ▼               ▼                  ▼           │
+│  📸 Scan or     👥 Assign     🔗 WhatsApp      📊 Dashboard         │
+│  manual entry   per person    personal URL     live updates         │
+│                                per friend      approve proofs       │
+│                                                                     │
+│  ───────────────────────────────────────────────────────────────    │
+│  💡 TYPICAL FLOW:                                                   │
+│                                                                     │
+│  You pay the bill  →  Create in Kongsi  →  Share with friends      │
+│                                          →  Friends see their share │
+│                                          →  They pay + upload proof │
+│                                          →  You approve  →  🎉      │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-## Features
+### Step by Step
 
-### Core Flow
-- **3-step bill creation wizard** — details + line items → participants → review
-- **Smart split** — equal split by default, custom amounts per person, toggle yourself in/out
-- **Line-item assignment** — who ordered what, auto-calculates proportional tax
-- **Shareable payment links** — each friend gets a personal pay page with their exact breakdown
-- **Live organizer dashboard** — tabs (Unpaid/Paid), per-person nudge reminders, confetti on full settlement
+| # | Action | Who |
+|---|--------|-----|
+| 1 | 📸 **Scan receipt** or enter manually — AI extracts line items | You (organizer) |
+| 2 | 👥 **Assign items** to friends — tap avatars per dish | You |
+| 3 | 🔗 **Share links** — each friend gets their personal payment URL | You → Friends |
+| 4 | 💰 **Friends pay** — see their breakdown, pay, upload proof | Friends |
+| 5 | ✅ **You approve** — verify proof, mark as paid | You |
+| 6 | 🎉 **All settled!** — confetti burst when everyone's done | Everyone |
 
-### AI Receipt Scanner
-- **2-tier pipeline** — Llama 4 Scout (vision) extracts raw text → GPT-OSS 120B structures line items
-- **Non-receipt detection** — redirects users back if they upload something that isn't a receipt
-- **Auto tax calculation** — detects gap between subtotal and total, calculates tax percentage
-- **Split-item support** — handles receipts where single line items are shared across people
+---
 
-### Payment Flow
-- **QR payment** — organizer uploads payment QR, friends scan to pay
-- **Proof upload** — friends submit payment proof after transferring
-- **Admin approval** — organizer approves/rejects payment proofs
-- **Remind button** — one-tap nudge with personalized WhatsApp share text
+## 🏗️ System Architecture
 
-### UX Polish
-- **Dutchie-inspired Material Design 3** — indigo primary, tonal surface elevation, Inter typeface
-- **Progress rings** — SVG donut charts showing paid vs remaining per person
-- **Paid stamp** — spring-animated "PAID" seal on settled bills
-- **Confetti burst** — celebration animation when all participants have paid
-- **Skeleton loading** — shimmer placeholders on all data-driven pages
-- **Error states** — retry buttons on every failure boundary
-- **Dark mode** — full light/dark support with OKLCH color space
-- **Past-due indicators** — red accent + "Overdue" badge on late unpaid bills
-- **Theme persistence** — inline script in layout head, no flash of wrong theme
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        🏗️ SYSTEM ARCHITECTURE                        │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   ┌─────────────┐      ┌─────────────┐      ┌──────────────────┐   │
+│   │  🖥️ Next.js  │◀────▶│ 🗄️ PocketBase│◀────▶│ 🤖 Groq AI       │   │
+│   │  (Vercel)   │      │  (Docker)   │      │ (Receipt OCR)    │   │
+│   └──────┬──────┘      └──────┬──────┘      └──────────────────┘   │
+│          │                    │                                      │
+│          ▼                    ▼                                      │
+│   ┌──────────────┐    ┌──────────────┐                              │
+│   │ 🎨 Client UI │    │ ☁️ Cloudflare │                              │
+│   │ Tailwind v4  │    │   Tunnel     │                              │
+│   │ Framer Motion│    │ (PB public)  │                              │
+│   │ shadcn/ui    │    └──────────────┘                              │
+│   └──────────────┘                                                  │
+│                                                                      │
+│   ───────────────────────────────────────────────────────────────   │
+│   🔐 SECURITY LAYER                                                  │
+│                                                                      │
+│   Admin Token ──▶ DELETE bill                                       │
+│   Payment Token ──▶ Personal pay page                                │
+│   Rate Limit ──▶ 10 req/min (create), 5/15min (pay)                 │
+│   Headers ──▶ HSTS, X-Content-Type, X-Frame, X-XSS                  │
+└──────────────────────────────────────────────────────────────────────┘
+```
 
-### Data & Privacy
-- **No accounts required** — dashboard access via unique admin token in URL
-- **Local contact book** — saved to localStorage, no server-side user accounts
-- **PB admin credential scoping** — defense-in-depth with restricted collection rules
+### Request Flow
 
-## Tech Stack
+```
+  👤 Friend                    🌐 Next.js API                 🗄️ PocketBase
+  ─────────                   ─────────────                 ─────────────
+      │                             │                             │
+      │  GET /b/[id]                │                             │
+      │────────────────────────────▶│                             │
+      │                             │  GET kongsi_bills/[id]      │
+      │                             │────────────────────────────▶│
+      │                             │  ◀─────────────────────────│
+      │  ◀──────────────────────────│                             │
+      │                             │                             │
+      │  POST /b/[id]/pay           │                             │
+      │────────────────────────────▶│                             │
+      │                             │  PATCH participant          │
+      │                             │────────────────────────────▶│
+      │                             │  ◀─────────────────────────│
+      │  ◀──────────────────────────│                             │
+      │                             │                             │
+  👤 Admin (Organizer)              │                             │
+  ────────────────                  │                             │
+      │                             │                             │
+      │  GET /dashboard?token=xxx   │                             │
+      │────────────────────────────▶│                             │
+      │                       🔐 verify token                     │
+      │                             │  GET + filter               │
+      │                             │────────────────────────────▶│
+      │  ◀──────────────────────────│                             │
+      │                             │                             │
+      │  DELETE /b/[id]             │                             │
+      │────────────────────────────▶│                             │
+      │                       🔐 verify token                     │
+      │                             │  DELETE bill (cascade)      │
+      │                             │────────────────────────────▶│
+      │  ◀──────────────────────────│                             │
+```
+
+---
+
+## 🗃️ Data Model
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      🗃️ POCKETBASE COLLECTIONS                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌───────────────────────────────┐  ┌──────────────────────────────┐│
+│  │       kongsi_bills           │  │    kongsi_participants        ││
+│  ├───────────────────────────────┤  ├──────────────────────────────┤│
+│  │ id           text (PK)       │  │ id           text (PK)       ││
+│  │ title        text            │  │ bill_id      relation ───────┼┼──┐
+│  │ total_amount number          │  │ name         text            ││  │
+│  │ description  text            │  │ amount       number          ││  │
+│  │ due_date     date            │  │ paid         bool            ││  │
+│  │ admin_token  text 🔐         │  │ paid_at      date            ││  │
+│  │ admin_qr     text (500K)     │  │ status       text            ││  │
+│  │ line_items   text (500K)     │  │ payment_token text 🔐        ││  │
+│  └───────────────────────────────┘  │ proof_image  text (500K)     ││  │
+│                                      └──────────────────────────────┘│  │
+│  ┌─────────────────────────────────────────────────────────────────┘  │
+│  │                                                                    │
+│  │  🔗 CASCADE DELETE: Deleting a bill removes all its participants   │
+│  └────────────────────────────────────────────────────────────────────│
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────────────┐ │
+│  │                    line_items (JSON)                             │ │
+│  ├──────────────────────────────────────────────────────────────────┤ │
+│  │  [                                                               │ │
+│  │    { "name": "Nasi Goreng",   "amount": 12.50, "paidBy": [...] },│ │
+│  │    { "name": "Teh Tarik",     "amount":  3.00, "paidBy": [...] },│ │
+│  │    { "name": "Roti Canai",    "amount":  2.50, "paidBy": [...] },│ │
+│  │    { "name": "Tax (SST 6%)",  "amount":  1.08, "paidBy":  null } │ │
+│  │  ]                                                               │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧠 AI Receipt Scanner
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                   🤖 2-TIER RECEIPT SCANNING PIPELINE                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  📸 User uploads                                                    │
+│       │                                                             │
+│       ▼                                                             │
+│  ┌─────────────────────────────────────────┐                       │
+│  │  TIER 1: Scout Vision (Llama 4)          │                       │
+│  │  ─────────────────────────────────────── │                       │
+│  │  • Checks: "Is this a receipt?"          │                       │
+│  │  • Extracts: raw text from image         │                       │
+│  │  • Decision: receipt → Tier 2            │                       │
+│  │             not receipt → ❌ redirect     │                       │
+│  └─────────────────┬───────────────────────┘                       │
+│                    │                                               │
+│                    ▼                                               │
+│  ┌─────────────────────────────────────────┐                       │
+│  │  TIER 2: GPT-OSS 120B                     │                       │
+│  │  ─────────────────────────────────────── │                       │
+│  │  • Structures: raw text → line items      │                       │
+│  │  • Detects: subtotal vs total gap         │                       │
+│  │  • Calculates: tax % auto                  │                       │
+│  │  • Output: [{name, amount}, ...]          │                       │
+│  └─────────────────┬───────────────────────┘                       │
+│                    │                                               │
+│                    ▼                                               │
+│  ┌─────────────────────────────────────────┐                       │
+│  │  UI: Assign items to friends              │                       │
+│  └─────────────────────────────────────────┘                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛣️ Routes & API
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        🛣️ APPLICATION ROUTES                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  /                    🏠 Landing page (hero + features)             │
+│  /app                 📱 App home (quick actions + active bills)    │
+│  /app/create          ➕ 3-step bill creation wizard                 │
+│  /app/scan            📸 Receipt scanner + manual entry mode        │
+│  /app/history         🕐 Past bills (localStorage)                  │
+│  /b/[id]              💳 Public payment card                        │
+│  /b/[id]/dashboard    📊 Organizer dashboard (🔐 token-gated)       │
+│  /b/[id]/qr           📱 QR payment page                           │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                        ⚡ API ENDPOINTS                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  POST   /api/bills                    📝 Create bill + participants │
+│  GET    /api/bills/[id]               📋 Public bill data           │
+│  POST   /api/bills/[id]/pay           💰 Submit payment + proof     │
+│  GET    /api/bills/[id]/dashboard     📊 Dashboard data (🔐)        │
+│  DELETE /api/bills/[id]               🗑️  Delete bill + cascade (🔐) │
+│  POST   /api/scan-receipt             🤖 Receipt OCR + structuring  │
+│  POST   /api/bills/[id]/qr            📱 Upload admin QR code       │
+│  POST   /api/bills/[id]/approve       ✅ Approve payment proof      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛡️ Security
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        🛡️ SECURITY MEASURES                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  🔐 TOKEN AUTH                                                      │
+│     • Admin token: crypto.randomUUID() (not Math.random)            │
+│     • Payment token: 24-char random string per participant          │
+│     • DELETE + dashboard gated behind admin token verification      │
+│                                                                     │
+│  ⏱️ RATE LIMITING                                                    │
+│     • Create bill: 10 requests per minute per IP                    │
+│     • Submit payment: 5 requests per 15 minutes per IP              │
+│                                                                     │
+│  🖼️ PROOF VALIDATION                                                │
+│     • Image-only uploads (type checking)                            │
+│     • Size limits enforced                                          │
+│                                                                     │
+│  🛡️ SECURITY HEADERS                                                │
+│     • Strict-Transport-Security (HSTS)                              │
+│     • X-Content-Type-Options: nosniff                               │
+│     • X-Frame-Options: DENY                                         │
+│     • X-XSS-Protection                                              │
+│                                                                     │
+│  🔒 NO ACCOUNT SYSTEM                                                │
+│     • Dashboard access via unique token in URL (not guessable)      │
+│     • Contacts stored locally (localStorage)                        │
+│     • No user registration, no passwords to leak                    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 16 (App Router, TypeScript strict) |
-| Styling | Tailwind CSS v4 (OKLCH), shadcn/ui |
-| Typography | Inter (next/font/google) |
-| Animation | Framer Motion |
-| Icons | Lucide React |
-| Validation | Zod |
-| Backend | PocketBase (Docker, Cloudflare Tunnel) |
-| AI/ML | Groq (Llama 4 Scout Vision + GPT-OSS 120B) |
-| Deployment | Vercel (auto-deploy on push) |
+| 🖥️ Framework | Next.js 16 (App Router, TypeScript strict) |
+| 🎨 Styling | Tailwind CSS v4 (OKLCH), shadcn/ui |
+| 🔤 Typography | Inter (next/font/google) |
+| 🎬 Animation | Framer Motion |
+| 🧩 Icons | Lucide React |
+| ✅ Validation | Zod |
+| 🗄️ Backend | PocketBase (Docker, Cloudflare Tunnel) |
+| 🤖 AI/ML | Groq — Llama 4 Scout + GPT-OSS 120B |
+| 🚀 Deploy | Vercel (auto-deploy on push) |
 
-## Architecture
+---
 
-```
-Organizer creates bill → Kongsi generates 2 URLs
-                            │
-                    ┌───────┴───────┐
-                    ▼               ▼
-            Public pay page    Admin dashboard
-            /b/[id]            /b/[id]/dashboard?token=xxx
-                    │               │
-                    ▼               ▼
-            Friends pay         Organizer tracks
-            + upload proof      + approves/rejects
-                                    │
-                                    ▼
-                            All paid → confetti 🎉
-```
-
-### Routes
-
-| Route | Purpose |
-|---|---|
-| `/` | Landing page — hero, features grid, "Why Kongsi" |
-| `/app` | App home — quick actions, active bills list |
-| `/app/create` | 3-step bill creation wizard |
-| `/app/scan` | Receipt scanner + manual entry mode |
-| `/app/history` | Past bills from localStorage |
-| `/b/[id]` | Public payment card (Dutchie-style) |
-| `/b/[id]/dashboard` | Organizer dashboard (token-gated) |
-| `/b/[id]/qr` | QR payment page for in-person scanning |
-
-### API Routes
-
-| Route | Purpose | Auth |
-|---|---|---|
-| `POST /api/bills` | Create bill + participants | None |
-| `GET /api/bills/[id]` | Public bill data | None |
-| `POST /api/bills/[id]/pay` | Submit payment + proof | None |
-| `GET /api/bills/[id]/dashboard` | Dashboard data | Token |
-| `DELETE /api/bills/[id]` | Delete bill (cascade) | Token |
-| `POST /api/scan-receipt` | Receipt OCR + structuring | None |
-
-### Data Model
-
-**kongsi_bills** — `id`, `title`, `total_amount`, `description`, `due_date`, `admin_token`, `admin_qr`, `line_items`
-
-**kongsi_participants** — `id`, `bill_id` (relation), `name`, `amount`, `paid`, `paid_at`
-
-## Getting Started
+## 🚀 Getting Started
 
 ```bash
-# Clone
 git clone <repo-url> && cd kongsi
-
-# Install
 npm install
+```
 
-# Environment variables (.env.local)
-NEXT_PUBLIC_PB_URL=https://kongsi-pb.cognitio.my
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_PB_URL=your-pocketbase-url
 POCKETBASE_ADMIN_EMAIL=your-admin-email
 POCKETBASE_ADMIN_PASSWORD=your-admin-password
 GROQ_API_KEY=your-groq-api-key
+```
 
-# Run
+```bash
+# PocketBase (local via Docker)
+docker compose up -d pocketbase
+
+# Dev server
 npm run dev
 # → http://localhost:3000
 ```
 
-### PocketBase (local)
+---
 
-```bash
-docker compose up -d pocketbase
-# Admin: http://localhost:8098/_/
-```
+## 📦 Key Features
 
-## Security
+- 📸 **AI receipt scanner** — 2-tier pipeline, snap and done
+- 👥 **Per-item assignment** — who ordered the extra nasi goreng? we know
+- 🔗 **Personal payment links** — each friend sees only their share
+- 📊 **Live dashboard** — unpaid/paid tabs, one-tap nudge reminders
+- 📱 **QR payment** — upload QR, friends scan to pay
+- ✅ **Proof + approval flow** — upload proof → approve → 🎉 confetti
+- 🧮 **Auto tax calculation** — detects subtotal/total gap, calculates %
+- 🌓 **Dark mode** — full light/dark with theme persistence
+- 💨 **Skeleton loading** — shimmer placeholders on every page
+- ⚠️ **Error boundaries** — retry buttons on every failure state
+- 🔴 **Past-due indicators** — red accent on overdue unpaid bills
+- 💾 **Local contact book** — saved to localStorage, zero server accounts
 
-- **DELETE endpoint** — requires valid `admin_token` to prevent unauthorized deletion
-- **Crypto-secure tokens** — `crypto.randomUUID()` for admin tokens (not Math.random)
-- **Rate limiting** — pay endpoint throttled to 5 requests/15min per IP
-- **Proof validation** — image-only uploads, size limits, type checking
-- **Security headers** — Strict-Transport-Security, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection
+---
 
-## License
+## 📄 License
 
 MIT
